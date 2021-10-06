@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"myapp3.0/internal/handler"
+	"myapp3.0/internal/repository"
 	"strings"
 )
 
@@ -59,7 +60,7 @@ func initHandlers(pool *pgxpool.Pool, e *echo.Echo) *echo.Echo {
 	e.Use(middleware.Recover())
 
 	hndlr := handler.CatHandler{}
-	hndlr.Pool = pool
+	hndlr.Rep = repository.New(pool)
 
 	e.POST("/records", hndlr.Add)
 	e.GET("/records/:id", hndlr.Get)

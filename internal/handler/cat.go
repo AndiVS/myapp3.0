@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"myapp3.0/internal/model"
@@ -10,10 +9,10 @@ import (
 )
 
 type CatHandler struct {
-	Pool *pgxpool.Pool
+	Rep *repository.Repository
 }
 
-//curl -d '{"name":"A","type":"B"}'  10.1.0.1:8080/records
+//Add add record about cat
 func (h *CatHandler) Add(c echo.Context) error {
 
 	rec := new(model.Record)
@@ -23,8 +22,7 @@ func (h *CatHandler) Add(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "")
 	}
 
-	rep := repository.New(h.Pool)
-	id, err := rep.Insert(rec, c)
+	id, err := h.Rep.Insert(rec, c.Request().Context())
 
 	if err != nil {
 		return err
@@ -33,7 +31,7 @@ func (h *CatHandler) Add(c echo.Context) error {
 	return c.JSON(http.StatusCreated, id)
 }
 
-//curl 10.1.0.1:8080/records/6
+//Get provides cat
 func (h *CatHandler) Get(c echo.Context) error {
 
 	rec := new(model.Record)
@@ -43,9 +41,7 @@ func (h *CatHandler) Get(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "")
 	}
 
-	rep := repository.New(h.Pool)
-
-	r, err := rep.Select(rec, c)
+	r, err := h.Rep.Select(rec, c.Request().Context())
 
 	if err != nil {
 		return err
@@ -54,12 +50,12 @@ func (h *CatHandler) Get(c echo.Context) error {
 	return c.JSON(http.StatusOK, r)
 }
 
-//SelectAll provides all cats
+//GetAll provides all cats
 func (h *CatHandler) GetAll(c echo.Context) error {
 
-	var rec []model.Record
-	rep := repository.New(h.Pool)
-	rec, err := rep.SelectAll(c)
+	var rec []*model.Record
+
+	rec, err := h.Rep.SelectAll(c.Request().Context())
 
 	if err != nil {
 		return err
@@ -68,7 +64,7 @@ func (h *CatHandler) GetAll(c echo.Context) error {
 	return c.JSON(http.StatusOK, rec)
 }
 
-//curl -XPUT -H 'Content-Type: application/json' -d '{"name":"AAAA","type":"BBBB"}'  127.0.0.1:8080/records/5
+//Update updating record about cat
 func (h *CatHandler) Update(c echo.Context) error {
 	rec := new(model.Record)
 
@@ -77,8 +73,7 @@ func (h *CatHandler) Update(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "")
 	}
 
-	rep := repository.New(h.Pool)
-	err := rep.Update(rec, c)
+	err := h.Rep.Update(rec, c.Request().Context())
 
 	if err != nil {
 		return err
@@ -87,7 +82,7 @@ func (h *CatHandler) Update(c echo.Context) error {
 	return c.JSON(http.StatusOK, "completed successfully")
 }
 
-//curl -XDELETE -H 'Content-Type: application/json'  127.0.0.1:8080/records/6
+//Delete delete record about cat
 func (h *CatHandler) Delete(c echo.Context) error {
 
 	rec := new(model.Record)
@@ -97,8 +92,7 @@ func (h *CatHandler) Delete(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "")
 	}
 
-	rep := repository.New(h.Pool)
-	err := rep.Delete(rec, c)
+	err := h.Rep.Delete(rec, c.Request().Context())
 
 	if err != nil {
 		return err
