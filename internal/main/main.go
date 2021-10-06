@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/labstack/echo/v4"
+	echo "github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"

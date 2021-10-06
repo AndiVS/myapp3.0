@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	pgx "github.com/jackc/pgx/v4"
+	pgxpool "github.com/jackc/pgx/v4/pgxpool"
 	log "github.com/sirupsen/logrus"
 	"myapp3.0/internal/model"
 )
@@ -25,7 +25,7 @@ func (repos *Repository) SelectAll(c context.Context) ([]*model.Record, error) {
 
 	for row.Next() {
 		var rc model.Record
-		err = row.Scan(&rc.Id, &rc.Name, &rc.Type)
+		err = row.Scan(&rc.ID, &rc.Name, &rc.Type)
 		if err == pgx.ErrNoRows {
 			return rec, err
 		}
@@ -41,7 +41,7 @@ func (repos *Repository) Select(id *int, c context.Context) (*model.Record, erro
 	row := repos.pool.QueryRow(c,
 		"SELECT id, name, type FROM catsbase WHERE id = $1", id)
 
-	err := row.Scan(&rec.Id, &rec.Name, &rec.Type)
+	err := row.Scan(&rec.ID, &rec.Name, &rec.Type)
 	if err != nil {
 		log.Errorf("Unable to SELECT: %v", err)
 		return &rec, err
@@ -58,7 +58,7 @@ func (repos *Repository) Insert(rec *model.Record, c context.Context) error {
 	row := repos.pool.QueryRow(c,
 		"INSERT INTO catsbase (name, type) VALUES ($1, $2) RETURNING id", rec.Name, rec.Type)
 
-	err := row.Scan(&rec.Id)
+	err := row.Scan(&rec.ID)
 	if err != nil {
 		log.Errorf("Unable to INSERT: %v", err)
 		return err
@@ -70,7 +70,7 @@ func (repos *Repository) Insert(rec *model.Record, c context.Context) error {
 func (repos *Repository) Update(rec *model.Record, c context.Context) error {
 
 	_, err := repos.pool.Exec(c,
-		"UPDATE catsbase SET name = $2, type = $3 WHERE id = $1", rec.Id, rec.Name, rec.Type)
+		"UPDATE catsbase SET name = $2, type = $3 WHERE id = $1", rec.ID, rec.Name, rec.Type)
 
 	if err != nil {
 		log.Errorf("Failed updating data in db: %s\n", err)
