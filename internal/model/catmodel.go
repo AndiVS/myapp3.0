@@ -1,6 +1,7 @@
+// Package model asad
 package model
 
-// Record Recotd struct
+// Record struct
 type Record struct {
 	ID   int    `param:"id" query:"id" header:"id" form:"id" json:"id" xml:"id"`
 	Name string `param:"name" query:"name" header:"name" form:"name" json:"name" xml:"name"`
