@@ -1,7 +1,7 @@
 package model
 
 type Record struct {
-	Id   int    `json:"id" xml:"id" form:"id" query:"id"`
-	Name string `json:"name" xml:"name" form:"name" query:"name"`
-	Type string `json:"type" xml:"type" form:"type" query:"type"`
+	Id   int    `param:"id" query:"id" header:"id" form:"id" json:"id" xml:"id"`
+	Name string `param:"name" query:"name" header:"name" form:"name" json:"name" xml:"name"`
+	Type string `param:"type" query:"type" header:"type" form:"type" json:"type" xml:"type"`
 }
