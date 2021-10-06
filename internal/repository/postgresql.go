@@ -16,19 +16,12 @@ func New(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
-func (repos Repository) SelectAll(c context.Context) ([]*model.Record, error) {
+func (repos *Repository) SelectAll(c context.Context) ([]*model.Record, error) {
 
 	var rec []*model.Record
 
-	conn, err := repos.pool.Acquire(c)
-	if err != nil {
-		log.Errorf("Unable to acquire a database connection for SelectAll: %v\n", err)
-		return rec, err
-	}
-	defer conn.Release()
-
-	row, err := conn.Query(c,
-		"SELECT * FROM catsbase")
+	row, err := repos.pool.Query(c,
+		"SELECT id, name, type  FROM catsbase")
 
 	for row.Next() {
 		var rc model.Record
@@ -42,66 +35,41 @@ func (repos Repository) SelectAll(c context.Context) ([]*model.Record, error) {
 	return rec, err
 }
 
-func (repos Repository) Select(rec *model.Record, c context.Context) (model.Record, error) {
+func (repos *Repository) Select(id *int, c context.Context) (*model.Record, error) {
 
-	conn, err := repos.pool.Acquire(c)
-	if err != nil {
-		log.Printf("Failed reading the request body for addCats: %s\n", err)
-		return *rec, err
-	}
-	defer conn.Release()
+	var rec model.Record
+	row := repos.pool.QueryRow(c,
+		"SELECT id, name, type FROM catsbase WHERE id = $1", id)
 
-	row := conn.QueryRow(c,
-		"SELECT id, name, type FROM catsbase WHERE id = $1", rec.Id)
-
-	err = row.Scan(&rec.Id, &rec.Name, &rec.Type)
-	if err == pgx.ErrNoRows {
-		log.Errorf("No such row: %v", err)
-		return *rec, err
-	}
+	err := row.Scan(&rec.Id, &rec.Name, &rec.Type)
 	if err != nil {
 		log.Errorf("Unable to SELECT: %v", err)
-		return *rec, err
+		return &rec, err
 
 	}
 
 	log.Printf("sec")
 
-	return *rec, err
+	return &rec, err
 }
 
-func (repos Repository) Insert(rec *model.Record, c context.Context) (uint64, error) {
+func (repos *Repository) Insert(rec *model.Record, c context.Context) error {
 
-	var id uint64
-	conn, err := repos.pool.Acquire(c)
-	if err != nil {
-		log.Errorf("Unable to acquire a database connection: %v\n", err)
-		return id, err
-	}
-	defer conn.Release()
-
-	row := conn.QueryRow(c,
+	row := repos.pool.QueryRow(c,
 		"INSERT INTO catsbase (name, type) VALUES ($1, $2) RETURNING id", rec.Name, rec.Type)
 
-	err = row.Scan(&id)
+	err := row.Scan(&rec.Id)
 	if err != nil {
 		log.Errorf("Unable to INSERT: %v", err)
-		return id, err
-	}
-
-	return id, err
-}
-
-func (repos Repository) Update(rec *model.Record, c context.Context) error {
-
-	conn, err := repos.pool.Acquire(c)
-	if err != nil {
-		log.Errorf("Unable to acquire a database connection: %v", err)
 		return err
 	}
-	defer conn.Release()
 
-	ct, err := conn.Exec(c,
+	return err
+}
+
+func (repos *Repository) Update(rec *model.Record, c context.Context) error {
+
+	_, err := repos.pool.Exec(c,
 		"UPDATE catsbase SET name = $2, type = $3 WHERE id = $1", rec.Id, rec.Name, rec.Type)
 
 	if err != nil {
@@ -109,30 +77,14 @@ func (repos Repository) Update(rec *model.Record, c context.Context) error {
 		return err
 	}
 
-	if ct.RowsAffected() == 0 {
-		log.Errorf("Failed reading the request body for addCats: %s\n", err)
-		return err
-	}
-
 	return nil
 }
 
-func (repos Repository) Delete(rec *model.Record, c context.Context) error {
-	conn, err := repos.pool.Acquire(c)
-	if err != nil {
-		log.Errorf("Unable to acquire a database connection: %v", err)
-		return err
-	}
-	defer conn.Release()
+func (repos *Repository) Delete(id *int, c context.Context) error {
 
-	ct, err := conn.Exec(c, "DELETE FROM catsbase WHERE id = $1", rec.Id)
+	_, err := repos.pool.Exec(c, "DELETE FROM catsbase WHERE id = $1", id)
 
 	if err != nil {
-		log.Errorf("Unable to DELETE: %v", err)
-		return err
-	}
-
-	if ct.RowsAffected() == 0 {
 		return err
 	}
 
