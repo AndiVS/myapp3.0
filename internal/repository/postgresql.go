@@ -1,23 +1,27 @@
+// Package repository contains code for handling different types of databases
 package repository
 
 import (
 	"context"
-	pgx "github.com/jackc/pgx/v4"
-	pgxpool "github.com/jackc/pgx/v4/pgxpool"
+
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	log "github.com/sirupsen/logrus"
 	"myapp3.0/internal/model"
 )
 
+// Repository struct for pool
 type Repository struct {
 	pool *pgxpool.Pool
 }
 
+// New function for customization repository
 func New(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
+// SelectAll function for selecting items from a table
 func (repos *Repository) SelectAll(c context.Context) ([]*model.Record, error) {
-
 	var rec []*model.Record
 
 	row, err := repos.pool.Query(c,
@@ -35,8 +39,8 @@ func (repos *Repository) SelectAll(c context.Context) ([]*model.Record, error) {
 	return rec, err
 }
 
-func (repos *Repository) Select(id *int, c context.Context) (*model.Record, error) {
-
+// Select function for selecting item from a table
+func (repos *Repository) Select(c context.Context, id *int) (*model.Record, error) {
 	var rec model.Record
 	row := repos.pool.QueryRow(c,
 		"SELECT id, name, type FROM catsbase WHERE id = $1", id)
@@ -45,7 +49,6 @@ func (repos *Repository) Select(id *int, c context.Context) (*model.Record, erro
 	if err != nil {
 		log.Errorf("Unable to SELECT: %v", err)
 		return &rec, err
-
 	}
 
 	log.Printf("sec")
@@ -53,8 +56,8 @@ func (repos *Repository) Select(id *int, c context.Context) (*model.Record, erro
 	return &rec, err
 }
 
-func (repos *Repository) Insert(rec *model.Record, c context.Context) error {
-
+// Insert function for inserting item from a table
+func (repos *Repository) Insert(c context.Context, rec *model.Record) error {
 	row := repos.pool.QueryRow(c,
 		"INSERT INTO catsbase (name, type) VALUES ($1, $2) RETURNING id", rec.Name, rec.Type)
 
@@ -67,8 +70,8 @@ func (repos *Repository) Insert(rec *model.Record, c context.Context) error {
 	return err
 }
 
-func (repos *Repository) Update(rec *model.Record, c context.Context) error {
-
+// Update function for updating item from a table
+func (repos *Repository) Update(c context.Context, rec *model.Record) error {
 	_, err := repos.pool.Exec(c,
 		"UPDATE catsbase SET name = $2, type = $3 WHERE id = $1", rec.ID, rec.Name, rec.Type)
 
@@ -80,8 +83,8 @@ func (repos *Repository) Update(rec *model.Record, c context.Context) error {
 	return nil
 }
 
-func (repos *Repository) Delete(id *int, c context.Context) error {
-
+// Delete function for deleting item from a table
+func (repos *Repository) Delete(c context.Context, id *int) error {
 	_, err := repos.pool.Exec(c, "DELETE FROM catsbase WHERE id = $1", id)
 
 	if err != nil {
