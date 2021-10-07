@@ -3,6 +3,7 @@ module myapp3.0
 go 1.16
 
 require (
+	github.com/caarlos0/env/v6 v6.7.1
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/labstack/echo v3.3.10+incompatible // indirect

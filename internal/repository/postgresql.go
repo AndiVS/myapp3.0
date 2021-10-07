@@ -25,7 +25,7 @@ func (repos *Repository) SelectAll(c context.Context) ([]*model.Record, error) {
 	var rec []*model.Record
 
 	row, err := repos.pool.Query(c,
-		"SELECT id, name, type  FROM catsbase")
+		"SELECT id, name, type  FROM cats")
 
 	for row.Next() {
 		var rc model.Record
@@ -40,10 +40,10 @@ func (repos *Repository) SelectAll(c context.Context) ([]*model.Record, error) {
 }
 
 // Select function for selecting item from a table
-func (repos *Repository) Select(c context.Context, id *int) (*model.Record, error) {
+func (repos *Repository) Select(c context.Context, id string) (*model.Record, error) {
 	var rec model.Record
 	row := repos.pool.QueryRow(c,
-		"SELECT id, name, type FROM catsbase WHERE id = $1", id)
+		"SELECT id, name, type FROM cats WHERE id = $1", id)
 
 	err := row.Scan(&rec.ID, &rec.Name, &rec.Type)
 	if err != nil {
@@ -59,7 +59,7 @@ func (repos *Repository) Select(c context.Context, id *int) (*model.Record, erro
 // Insert function for inserting item from a table
 func (repos *Repository) Insert(c context.Context, rec *model.Record) error {
 	row := repos.pool.QueryRow(c,
-		"INSERT INTO catsbase (name, type) VALUES ($1, $2) RETURNING id", rec.Name, rec.Type)
+		"INSERT INTO cats (name, type) VALUES ($1, $2) RETURNING id", rec.Name, rec.Type)
 
 	err := row.Scan(&rec.ID)
 	if err != nil {
@@ -73,7 +73,7 @@ func (repos *Repository) Insert(c context.Context, rec *model.Record) error {
 // Update function for updating item from a table
 func (repos *Repository) Update(c context.Context, rec *model.Record) error {
 	_, err := repos.pool.Exec(c,
-		"UPDATE catsbase SET name = $2, type = $3 WHERE id = $1", rec.ID, rec.Name, rec.Type)
+		"UPDATE cats SET name = $2, type = $3 WHERE id = $1", rec.ID, rec.Name, rec.Type)
 
 	if err != nil {
 		log.Errorf("Failed updating data in db: %s\n", err)
@@ -84,8 +84,8 @@ func (repos *Repository) Update(c context.Context, rec *model.Record) error {
 }
 
 // Delete function for deleting item from a table
-func (repos *Repository) Delete(c context.Context, id *int) error {
-	_, err := repos.pool.Exec(c, "DELETE FROM catsbase WHERE id = $1", id)
+func (repos *Repository) Delete(c context.Context, id string) error {
+	_, err := repos.pool.Exec(c, "DELETE FROM cats WHERE id = $1", id)
 
 	if err != nil {
 		return err

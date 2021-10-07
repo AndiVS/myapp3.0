@@ -7,11 +7,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"myapp3.0/internal/config"
 	"myapp3.0/internal/handler"
 	"myapp3.0/internal/repository"
-
-	"strings"
+	"myapp3.0/internal/service"
 )
 
 func main() {
@@ -22,32 +21,29 @@ func main() {
 	customFormatter.FullTimestamp = true
 	log.SetFormatter(customFormatter)
 
-	initViper()
+	cfg := config.Config{}
+	config.New(&cfg)
 
-	logLevelString := viper.GetString("loglevel")
-
-	logLevel, err := log.ParseLevel(logLevelString)
+	logLevel, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {
-		log.Fatalf("Unable to parse loglevel: %s", logLevelString)
+		log.Fatalf("Unable to parse loglevel: %s", cfg.LogLevel)
 	}
 
 	log.SetLevel(logLevel)
 
-	dbURL := viper.GetString("db.url")
-	log.Infof("Using DB URL: %s", dbURL)
+	log.Infof("Using DB URL: %s", cfg.DBURL)
 
-	pool, err := pgxpool.Connect(context.Background(), dbURL)
+	pool, err := pgxpool.Connect(context.Background(), cfg.DBURL)
 	if err != nil {
 		log.Fatalf("Unable to connection to database: %v", err)
 	}
 	defer pool.Close()
 	log.Infof("Connected!")
 
-	listenAddr := viper.GetString("listen")
-	log.Infof("Starting HTTP server at %s...", listenAddr)
+	log.Infof("Starting HTTP server at %s...", cfg.Port)
 
 	initHandlers(pool, e)
-	err = e.Start(listenAddr)
+	err = e.Start(cfg.Port)
 	if err != nil {
 		log.Error("Start server error")
 	}
@@ -61,23 +57,15 @@ func initHandlers(pool *pgxpool.Pool, e *echo.Echo) *echo.Echo {
 	}))
 	e.Use(middleware.Recover())
 
-	hndlr := handler.CatHandler{}
-	hndlr.Rep = repository.New(pool)
+	recordRepository := repository.New(pool)
+	recordService := service.New(recordRepository)
+	recordHandler := handler.New(recordService)
 
-	e.POST("/records", hndlr.Add)
-	e.GET("/records/:id", hndlr.Get)
-	e.GET("/records", hndlr.GetAll)
-	e.PUT("/records/:id", hndlr.Update)
-	e.DELETE("/records/:id", hndlr.Delete)
+	e.POST("/records", recordHandler.Add)
+	e.GET("/records/:id", recordHandler.Get)
+	e.GET("/records", recordHandler.GetAll)
+	e.PUT("/records/:id", recordHandler.Update)
+	e.DELETE("/records/:id", recordHandler.Delete)
+
 	return e
-}
-
-func initViper() {
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.SetEnvPrefix("restexample")
-
-	viper.SetDefault("loglevel", "debug")
-	viper.SetDefault("listen", "localhost:8080")
-	viper.SetDefault("db.url", "postgres://andeisaldyun:e3cr3t@localhost:5432/catsDB")
 }
