@@ -33,16 +33,16 @@ func main() {
 
 	log.Infof("Using DB URL: %s", cfg.DBURL)
 
-	pool, err := pgxpool.Connect(context.Background(), cfg.DBURL)
+	userPool, err := pgxpool.Connect(context.Background(), cfg.DBURL)
 	if err != nil {
 		log.Fatalf("Unable to connection to database: %v", err)
 	}
-	defer pool.Close()
+	defer userPool.Close()
 	log.Infof("Connected!")
 
 	log.Infof("Starting HTTP server at %s...", cfg.Port)
 
-	initHandlers(pool, e)
+	initHandlers(userPool, e)
 	err = e.Start(cfg.Port)
 	if err != nil {
 		log.Error("Start server error")
@@ -61,11 +61,11 @@ func initHandlers(pool *pgxpool.Pool, e *echo.Echo) *echo.Echo {
 	recordService := service.New(recordRepository)
 	recordHandler := handler.New(recordService)
 
-	e.POST("/records", recordHandler.Add)
-	e.GET("/records/:id", recordHandler.Get)
-	e.GET("/records", recordHandler.GetAll)
-	e.PUT("/records/:id", recordHandler.Update)
-	e.DELETE("/records/:id", recordHandler.Delete)
+	e.POST("/records", recordHandler.AddC)
+	e.GET("/records/:id", recordHandler.GetC)
+	e.GET("/records", recordHandler.GetAllC)
+	e.PUT("/records/:id", recordHandler.UpdateC)
+	e.DELETE("/records/:id", recordHandler.DeleteC)
 
 	return e
 }
