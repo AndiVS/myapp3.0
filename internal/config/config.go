@@ -8,10 +8,11 @@ import (
 
 // Config struct to config env
 type Config struct {
-	Port     string `env:"PORT" envDefault:":8080" json:"port,omitempty"`
-	Host     string `env:"HOST" envDefault:"localhost" json:"host,omitempty"`
-	LogLevel string `env:"LOGLEVEL" envDefault:"debug" json:"loglevel,omitempty"`
-	DBURL    string `env:"DBURL" envDefault:"postgres://andeisaldyun:e3cr3t@localhost:5432/catsDB" json:"dburl,omitempty"`
+	Port          string `env:"PORT" envDefault:":8080" json:"port,omitempty"`
+	Host          string `env:"HOST" envDefault:"localhost" json:"host,omitempty"`
+	LogLevel      string `env:"LOGLEVEL" envDefault:"debug" json:"loglevel,omitempty"`
+	DBURLPOSTGRES string `env:"DBURLPOSTGRES" envDefault:"postgres://andeisaldyun:e3cr3t@localhost:5432/catsDB" json:"dburlpostgres,omitempty"`
+	DBURLMONGO    string `env:"DBURLMONGO" envDefault:"mongodb://andeisaldyun:e3cr3t@localhost:5432/catsDB" json:"dburlmongo,omitempty"`
 
 	HashSalt                    string `env:"HASHSALT" envDefault:"HAsh_salt" json:"hash_salt,omitempty"`
 	AuthenticationKey           string `env:"AUTHENTICATIONKEY" envDefault:"authentication_key" json:"authentication_key,omitempty"`

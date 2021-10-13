@@ -17,7 +17,8 @@ import (
 
 // Authorizer for generating token
 type Authorizer struct {
-	Rep *repository.Repository
+	//Rep *repository.RepositoryPostgres
+	Rep *repository.RepositoryMongo
 
 	hashSalt           string
 	authenticationKey  []byte
@@ -27,7 +28,7 @@ type Authorizer struct {
 }
 
 // NewAuthorizer func for creating new authorizer
-func NewAuthorizer(repositor *repository.Repository, hashSalt string, authenticationKey, refreshKey []byte, auntExpireDuration, refExpireDuration time.Duration) *Authorizer {
+/*func NewAuthorizer(repositor *repository.RepositoryPostgres, hashSalt string, authenticationKey, refreshKey []byte, auntExpireDuration, refExpireDuration time.Duration) *Authorizer {
 	return &Authorizer{
 		Rep:                repositor,
 		hashSalt:           hashSalt,
@@ -36,11 +37,17 @@ func NewAuthorizer(repositor *repository.Repository, hashSalt string, authentica
 		auntExpireDuration: auntExpireDuration,
 		refExpireDuration:  refExpireDuration,
 	}
-}
+}*/
 
-// GetU provides cat
-func (author *Authorizer) GetU(c context.Context, username, password string) (*model.User, error) {
-	return author.Rep.SelectU(c, username, password)
+func NewAuthorizer(repositor *repository.RepositoryMongo, hashSalt string, authenticationKey, refreshKey []byte, auntExpireDuration, refExpireDuration time.Duration) *Authorizer {
+	return &Authorizer{
+		Rep:                repositor,
+		hashSalt:           hashSalt,
+		authenticationKey:  authenticationKey,
+		refreshKey:         refreshKey,
+		auntExpireDuration: auntExpireDuration,
+		refExpireDuration:  refExpireDuration,
+	}
 }
 
 // GetAllU provides all cats

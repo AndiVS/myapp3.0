@@ -8,13 +8,24 @@ import (
 	"myapp3.0/internal/repository"
 )
 
+// Records contains usecase logic for cats
+type Records interface {
+	SelectAllC(ctx context.Context) ([]*model.Record, error)
+	SelectC(ctx context.Context, id string) (*model.Record, error)
+	InsertC(ctx context.Context, rec *model.Record) error
+	DeleteC(ctx context.Context, id string) error
+	UpdateC(ctx context.Context, rec *model.Record) error
+}
+
 // Service struct for rep
 type Service struct {
-	Rep *repository.Repository
+	//Rep interface{}
+	//Rep *repository.RepositoryPostgres
+	Rep *repository.RepositoryMongo
 }
 
 // New function for customization service
-func New(Rep *repository.Repository) *Service {
+func New(Rep *repository.RepositoryMongo) *Service {
 	return &Service{Rep: Rep}
 }
 

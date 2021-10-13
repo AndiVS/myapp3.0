@@ -10,18 +10,18 @@ import (
 	model "myapp3.0/internal/model"
 )
 
-// Repository struct for pool
-type Repository struct {
+// RepositoryPostgres struct for pool
+type RepositoryPostgres struct {
 	pool *pgxpool.Pool
 }
 
 // New function for customization repository
-func New(pool *pgxpool.Pool) *Repository {
-	return &Repository{pool: pool}
+func New(pool *pgxpool.Pool) *RepositoryPostgres {
+	return &RepositoryPostgres{pool: pool}
 }
 
 // SelectAllC function for selecting items from a table
-func (repos *Repository) SelectAllC(c context.Context) ([]*model.Record, error) {
+func (repos *RepositoryPostgres) SelectAllC(c context.Context) ([]*model.Record, error) {
 	var rec []*model.Record
 
 	row, err := repos.pool.Query(c,
@@ -40,7 +40,7 @@ func (repos *Repository) SelectAllC(c context.Context) ([]*model.Record, error) 
 }
 
 // SelectC function for selecting item from a table
-func (repos *Repository) SelectC(c context.Context, id string) (*model.Record, error) {
+func (repos *RepositoryPostgres) SelectC(c context.Context, id string) (*model.Record, error) {
 	var rec model.Record
 	row := repos.pool.QueryRow(c,
 		"SELECT id, name, type FROM cats WHERE id = $1", id)
@@ -57,7 +57,7 @@ func (repos *Repository) SelectC(c context.Context, id string) (*model.Record, e
 }
 
 // InsertC function for inserting item from a table
-func (repos *Repository) InsertC(c context.Context, rec *model.Record) error {
+func (repos *RepositoryPostgres) InsertC(c context.Context, rec *model.Record) error {
 	row := repos.pool.QueryRow(c,
 		"INSERT INTO cats (name, type) VALUES ($1, $2) RETURNING id", rec.Name, rec.Type)
 
@@ -71,7 +71,7 @@ func (repos *Repository) InsertC(c context.Context, rec *model.Record) error {
 }
 
 // UpdateC function for updating item from a table
-func (repos *Repository) UpdateC(c context.Context, rec *model.Record) error {
+func (repos *RepositoryPostgres) UpdateC(c context.Context, rec *model.Record) error {
 	_, err := repos.pool.Exec(c,
 		"UPDATE cats SET name = $2, type = $3 WHERE id = $1", rec.ID, rec.Name, rec.Type)
 
@@ -84,7 +84,7 @@ func (repos *Repository) UpdateC(c context.Context, rec *model.Record) error {
 }
 
 // DeleteC function for deleting item from a table
-func (repos *Repository) DeleteC(c context.Context, id string) error {
+func (repos *RepositoryPostgres) DeleteC(c context.Context, id string) error {
 	_, err := repos.pool.Exec(c, "DELETE FROM cats WHERE id = $1", id)
 
 	if err != nil {

@@ -38,24 +38,6 @@ func (h *UserHandler) AddU(c echo.Context) error {
 	return echo.NewHTTPError(http.StatusCreated, rec.Username)
 }
 
-// GetU provides cat
-func (h *UserHandler) GetU(c echo.Context) error {
-	rec := new(model.User)
-
-	if err := c.Bind(rec); err != nil {
-		log.Errorf("Bind fail : %v\n", err)
-		return echo.NewHTTPError(http.StatusBadRequest)
-	}
-
-	r, err := h.Service.GetU(c.Request().Context(), rec.Username, rec.Password)
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
-	}
-
-	return echo.NewHTTPError(http.StatusOK, r)
-}
-
 // GetAllU provides all cats
 func (h *UserHandler) GetAllU(c echo.Context) error {
 	var rec []*model.User

@@ -9,7 +9,7 @@ import (
 )
 
 // SelectAllU function for selecting items from a table
-func (repos *Repository) SelectAllU(c context.Context) ([]*model.User, error) {
+func (repos *RepositoryPostgres) SelectAllU(c context.Context) ([]*model.User, error) {
 	var rec []*model.User
 
 	row, err := repos.pool.Query(c,
@@ -28,7 +28,7 @@ func (repos *Repository) SelectAllU(c context.Context) ([]*model.User, error) {
 }
 
 // SelectU function for selecting item from a table
-func (repos *Repository) SelectU(c context.Context, username, password string) (*model.User, error) {
+func (repos *RepositoryPostgres) SelectU(c context.Context, username, password string) (*model.User, error) {
 	var rc model.User
 	row := repos.pool.QueryRow(c,
 		"SELECT username, password, is_admin  FROM users WHERE username = $1 AND password = $2", username, password)
@@ -45,7 +45,7 @@ func (repos *Repository) SelectU(c context.Context, username, password string) (
 }
 
 // InsertU function for inserting item from a table
-func (repos *Repository) InsertU(c context.Context, rec *model.User) error {
+func (repos *RepositoryPostgres) InsertU(c context.Context, rec *model.User) error {
 	row := repos.pool.QueryRow(c,
 		"INSERT INTO users (username, password, is_admin) VALUES ($1, $2, $3) RETURNING username", rec.Username, rec.Password, false)
 
@@ -59,7 +59,7 @@ func (repos *Repository) InsertU(c context.Context, rec *model.User) error {
 }
 
 // UpdateU function for updating item from a table
-func (repos *Repository) UpdateU(c context.Context, username string, isAdmin bool) error {
+func (repos *RepositoryPostgres) UpdateU(c context.Context, username string, isAdmin bool) error {
 	_, err := repos.pool.Exec(c,
 		"UPDATE users SET is_admin = $2 WHERE username = $1", username, isAdmin)
 
@@ -72,7 +72,7 @@ func (repos *Repository) UpdateU(c context.Context, username string, isAdmin boo
 }
 
 // DeleteU function for deleting item from a table
-func (repos *Repository) DeleteU(c context.Context, username string) error {
+func (repos *RepositoryPostgres) DeleteU(c context.Context, username string) error {
 	_, err := repos.pool.Exec(c, "DELETE FROM users WHERE username = $1", username)
 
 	if err != nil {
