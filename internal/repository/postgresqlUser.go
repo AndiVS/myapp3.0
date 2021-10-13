@@ -28,10 +28,10 @@ func (repos *Repository) SelectAllU(c context.Context) ([]*model.User, error) {
 }
 
 // SelectU function for selecting item from a table
-func (repos *Repository) SelectU(c context.Context, username string) (*model.User, error) {
+func (repos *Repository) SelectU(c context.Context, username, password string) (*model.User, error) {
 	var rc model.User
 	row := repos.pool.QueryRow(c,
-		"SELECT username, password, is_admin  FROM users WHERE id = $1", username)
+		"SELECT username, password, is_admin  FROM users WHERE username = $1 AND password = $2", username, password)
 
 	err := row.Scan(&rc.Username, &rc.Password, &rc.IsAdmin)
 	if err != nil {
@@ -47,7 +47,7 @@ func (repos *Repository) SelectU(c context.Context, username string) (*model.Use
 // InsertU function for inserting item from a table
 func (repos *Repository) InsertU(c context.Context, rec *model.User) error {
 	row := repos.pool.QueryRow(c,
-		"INSERT INTO users (username, password) VALUES ($1, $2)", rec.Username, rec.Password)
+		"INSERT INTO users (username, password, is_admin) VALUES ($1, $2, $3) RETURNING username", rec.Username, rec.Password, false)
 
 	err := row.Scan(&rec.Username)
 	if err != nil {
