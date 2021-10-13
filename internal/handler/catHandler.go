@@ -15,9 +15,9 @@ type CatHandler struct {
 	Service *service.Service
 }
 
-// New function for customization handler
-func New(Service *service.Service) CatHandler {
-	return CatHandler{Service: Service}
+// NewC function for customization handler
+func NewC(Service *service.Service) *CatHandler {
+	return &CatHandler{Service: Service}
 }
 
 // AddC record about cat

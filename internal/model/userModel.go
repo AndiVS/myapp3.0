@@ -1,5 +1,6 @@
 package model
 
+// User for JWT
 type User struct {
 	Username string `param:"username" query:"username" header:"username" form:"username" xml:"username" json:"username,omitempty"`
 	Password string `param:"password" query:"password" header:"password" form:"password" xml:"password" json:"password,omitempty"`

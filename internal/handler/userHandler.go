@@ -12,7 +12,12 @@ import (
 
 // UserHandler struct that contain repository linc
 type UserHandler struct {
-	Service *service.Service
+	Service *service.Authorizer
+}
+
+// NewU add new user handler
+func NewU(Service *service.Authorizer) *UserHandler {
+	return &UserHandler{Service: Service}
 }
 
 // AddU record about cat
@@ -35,9 +40,14 @@ func (h *UserHandler) AddU(c echo.Context) error {
 
 // GetU provides cat
 func (h *UserHandler) GetU(c echo.Context) error {
-	id := c.Param("")
+	rec := new(model.User)
 
-	r, err := h.Service.GetU(c.Request().Context(), id)
+	if err := c.Bind(rec); err != nil {
+		log.Errorf("Bind fail : %v\n", err)
+		return echo.NewHTTPError(http.StatusBadRequest)
+	}
+
+	r, err := h.Service.GetU(c.Request().Context(), rec.Username, rec.Password)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError)
@@ -88,4 +98,21 @@ func (h *UserHandler) DeleteU(c echo.Context) error {
 	}
 
 	return echo.NewHTTPError(http.StatusOK, "completed successfully")
+}
+
+// SignIn generate token
+func (h *UserHandler) SignIn(c echo.Context) error {
+	rec := new(model.User)
+
+	if err := c.Bind(rec); err != nil {
+		log.Errorf("Bind fail : %v\n", err)
+		return echo.NewHTTPError(http.StatusBadRequest)
+	}
+
+	err := h.Service.SignIn(c, rec)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
+
+	return err
 }
