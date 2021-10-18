@@ -12,13 +12,21 @@ type Config struct {
 	Host          string `env:"HOST" envDefault:"localhost" json:"host,omitempty"`
 	LogLevel      string `env:"LOGLEVEL" envDefault:"debug" json:"loglevel,omitempty"`
 	DBURLPOSTGRES string `env:"DBURLPOSTGRES" envDefault:"postgres://andeisaldyun:e3cr3t@localhost:5432/catsDB" json:"dburlpostgres,omitempty"`
-	DBURLMONGO    string `env:"DBURLMONGO" envDefault:"mongodb://andeisaldyun:e3cr3t@localhost:5432/catsDB" json:"dburlmongo,omitempty"`
+	DBURLMONGO    string `env:"DBURLMONGO" envDefault:"mongodb://andeisaldyun:e3cr3t@localhost:27017" json:"dburlmongo,omitempty"`
+	DBURL         string `env:"DBURL" envDefault:"" json:"dburl,omitempty"`
+
+	System     string `env:"SYSTEM" envDefault:"mongodb"`
+	DBUser     string `env:"DB_USER" envDefault:"andeisaldyun"`
+	DBPassword string `env:"DB_PASSWORD" envDefault:"e3cr3t"`
+	DBHost     string `env:"DB_HOST" envDefault:"localhost"`
+	DBPort     int    `env:"DB_PORT" envDefault:"27017"`
+	DBName     string `env:"DB_NAME" envDefault:"catsDB"`
 
 	HashSalt                    string `env:"HASHSALT" envDefault:"HAsh_salt" json:"hash_salt,omitempty"`
 	AuthenticationKey           string `env:"AUTHENTICATIONKEY" envDefault:"authentication_key" json:"authentication_key,omitempty"`
 	RefreshKey                  string `env:"REFRESHKEY" envDefault:"refresh_key" json:"refresh_key,omitempty"`
-	AuthenticationTokenDuration int    `env:"TOKENDURATION" envDefault:"3600" json:"token_duration,omitempty"`
-	RefreshTokenDuration        int    `env:"REFRESHTOKENDURATION" envDefault:"86400" json:"refresh-token-duration,omitempty"`
+	AuthenticationTokenDuration int    `env:"TOKENDURATION" envDefault:"36000" json:"token_duration,omitempty"`
+	RefreshTokenDuration        int    `env:"REFRESHTOKENDURATION" envDefault:"864000" json:"refresh-token-duration,omitempty"`
 }
 
 // New contract config

@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"reflect"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
@@ -17,9 +18,7 @@ import (
 
 // Authorizer for generating token
 type Authorizer struct {
-	//Rep *repository.RepositoryPostgres
-	Rep *repository.RepositoryMongo
-
+	Rep                repository.Users
 	hashSalt           string
 	authenticationKey  []byte
 	refreshKey         []byte
@@ -27,27 +26,32 @@ type Authorizer struct {
 	refExpireDuration  time.Duration
 }
 
-// NewAuthorizer func for creating new authorizer
-/*func NewAuthorizer(repositor *repository.RepositoryPostgres, hashSalt string, authenticationKey, refreshKey []byte, auntExpireDuration, refExpireDuration time.Duration) *Authorizer {
-	return &Authorizer{
-		Rep:                repositor,
-		hashSalt:           hashSalt,
-		authenticationKey:  authenticationKey,
-		refreshKey:         refreshKey,
-		auntExpireDuration: auntExpireDuration,
-		refExpireDuration:  refExpireDuration,
-	}
-}*/
+func NewAuthorizer(repositor interface{}, hashSalt string, authenticationKey, refreshKey []byte, auntExpireDuration, refExpireDuration time.Duration) *Authorizer {
+	var mongo *repository.RepositoryMongo
+	var postgres *repository.RepositoryPostgres
 
-func NewAuthorizer(repositor *repository.RepositoryMongo, hashSalt string, authenticationKey, refreshKey []byte, auntExpireDuration, refExpireDuration time.Duration) *Authorizer {
-	return &Authorizer{
-		Rep:                repositor,
-		hashSalt:           hashSalt,
-		authenticationKey:  authenticationKey,
-		refreshKey:         refreshKey,
-		auntExpireDuration: auntExpireDuration,
-		refExpireDuration:  refExpireDuration,
+	switch reflect.TypeOf(repositor) {
+	case reflect.TypeOf(mongo):
+		return &Authorizer{
+			Rep:                repositor.(*repository.RepositoryMongo),
+			hashSalt:           hashSalt,
+			authenticationKey:  authenticationKey,
+			refreshKey:         refreshKey,
+			auntExpireDuration: auntExpireDuration,
+			refExpireDuration:  refExpireDuration,
+		}
+	case reflect.TypeOf(postgres):
+		return &Authorizer{
+			Rep:                repositor.(*repository.RepositoryPostgres),
+			hashSalt:           hashSalt,
+			authenticationKey:  authenticationKey,
+			refreshKey:         refreshKey,
+			auntExpireDuration: auntExpireDuration,
+			refExpireDuration:  refExpireDuration,
+		}
 	}
+
+	return nil
 }
 
 // GetAllU provides all cats
@@ -111,7 +115,6 @@ func (author *Authorizer) GenerateTokensAndSetCookies(user *model.User, c echo.C
 	})
 }
 
-//
 func setTokenCookie(name, token string, expiration time.Time, c echo.Context) {
 	cookie := new(http.Cookie)
 	cookie.Name = name
@@ -122,7 +125,6 @@ func setTokenCookie(name, token string, expiration time.Time, c echo.Context) {
 	c.SetCookie(cookie)
 }
 
-// GenerateToken func for token generation
 func generateToken(user *model.User, expire time.Duration, secret []byte) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &model.Claims{
 		StandardClaims: jwt.StandardClaims{

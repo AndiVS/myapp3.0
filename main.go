@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -15,7 +15,6 @@ import (
 	"myapp3.0/internal/model"
 	"myapp3.0/internal/repository"
 	"myapp3.0/internal/service"
-
 	"time"
 )
 
@@ -32,26 +31,31 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to parse loglevel: %s", cfg.LogLevel)
 	}
-
 	log.SetLevel(logLevel)
 
-	log.Infof("Using DB URL: %s", cfg.DBURLMONGO)
+	cfg.DBURL = getURL(&cfg)
+	log.Infof("Using DB URL: %s", cfg.DBURL)
 
-	pool, err := pgxpool.Connect(context.Background(), cfg.DBURLMONGO)
-	if err != nil {
-		log.Fatalf("Unable to connection to database: %v", err)
+	var recordRepository repository.Cats
+	switch cfg.System {
+	case "mongodb":
+		mongoClient, mongoDB := getMongo(cfg.DBURL, cfg.DBName)
+		defer mongoClient.Disconnect(context.Background())
+		recordRepository = repository.NewRepository(mongoDB)
+	case "postgres":
+		pool := getPostgres(cfg.DBURL)
+		if err != nil {
+			log.Fatalf("Unable to connection to database: %v", err)
+		}
+		defer pool.Close()
+		recordRepository = repository.NewRepository(pool)
 	}
-	defer pool.Close()
+
 	log.Infof("Connected!")
 
 	log.Infof("Starting HTTP server at %s...", cfg.Port)
 
-	mongoClient, mongoDB := getMongo(&cfg)
-	defer mongoClient.Disconnect(context.Background()) //nolint:errcheck,gocritic
-
-	//recordRepository := repository.New(pool)
-	recordRepository := repository.NewRepositoryMongo(mongoDB)
-	recordService := service.New(recordRepository)
+	recordService := service.NewService(recordRepository)
 	recordHandler := handler.NewC(recordService)
 
 	userService := service.NewAuthorizer(
@@ -62,7 +66,6 @@ func main() {
 		time.Duration(cfg.AuthenticationTokenDuration)*time.Second,
 		time.Duration(cfg.RefreshTokenDuration)*time.Second,
 	)
-
 	userHandler := handler.NewU(userService)
 
 	e := echo.New()
@@ -85,13 +88,12 @@ func initHandlers(recordHandler *handler.CatHandler, userHandler *handler.UserHa
 	e.POST("/auth/sign-in", userHandler.SignIn)
 
 	admin := e.Group("/admin")
-	// Configure middleware with the custom claims type
-	configur := middleware.JWTConfig{
+	config := middleware.JWTConfig{
 		Claims:     &model.Claims{},
 		SigningKey: []byte(cfg.AuthenticationKey),
 	}
 
-	admin.Use(middleware.JWTWithConfig(configur))
+	admin.Use(middleware.JWTWithConfig(config))
 	admin.Use(middlewar.Check)
 	admin.Use(userHandler.Service.TokenRefresherMiddleware)
 
@@ -108,26 +110,57 @@ func initHandlers(recordHandler *handler.CatHandler, userHandler *handler.UserHa
 
 	user := e.Group("/user")
 
-	user.Use(middleware.JWTWithConfig(configur))
+	user.Use(middleware.JWTWithConfig(config))
 	user.Use(userHandler.Service.TokenRefresherMiddleware)
+
+	user.POST("/records", recordHandler.AddC)
+	user.GET("/user", userHandler.GetAllU)
+
 	user.GET("/records/:id", recordHandler.GetC)
 	user.GET("/records", recordHandler.GetAllC)
 
 	return e
 }
 
-func getMongo(cfg *config.Config) (*mongo.Client, *mongo.Database) {
-	mongoURI, dbName := "mongodb://andeisaldyun:e3cr3t@localhost:5432", "catsDB"
+func getPostgres(url string) *pgxpool.Pool {
+	pool, err := pgxpool.Connect(context.Background(), url)
+	if err != nil {
+		log.Fatalf("Unable to connection to database: %v", err)
+	}
+	return pool
+}
 
-	mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoURI))
-	check(err)
+func getMongo(url, dbname string) (*mongo.Client, *mongo.Database) {
 
-	db := mongoClient.Database(dbName)
+	mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	//mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI(url))
+	if err != nil {
+		log.Fatalf("Unable to connection to database: %v", err)
+	}
+
+	db := mongoClient.Database(dbname)
 	return mongoClient, db
 }
 
-func check(err error) {
-	if err != nil {
-		log.Fatal(err)
+func getURL(cfg *config.Config) (URL string) {
+	var str string
+	if cfg.System == "mongodb" {
+		str = fmt.Sprintf("%s://%s:%s@%s:%d",
+			cfg.System,
+			cfg.DBUser,
+			cfg.DBPassword,
+			cfg.DBHost,
+			cfg.DBPort,
+		)
+	} else {
+		str = fmt.Sprintf("%s://%s:%s@%s:%d/%s",
+			cfg.System,
+			cfg.DBUser,
+			cfg.DBPassword,
+			cfg.DBHost,
+			cfg.DBPort,
+			cfg.DBName,
+		)
 	}
+	return str
 }

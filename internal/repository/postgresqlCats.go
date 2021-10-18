@@ -5,38 +5,30 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	log "github.com/sirupsen/logrus"
 	model "myapp3.0/internal/model"
 )
 
-// RepositoryPostgres struct for pool
-type RepositoryPostgres struct {
-	pool *pgxpool.Pool
+type Cats interface {
+	InsertC(c context.Context, rec *model.Record) error
+	SelectC(c context.Context, id string) (*model.Record, error)
+	SelectAllC(c context.Context) ([]*model.Record, error)
+	UpdateC(c context.Context, rec *model.Record) error
+	DeleteC(c context.Context, id string) error
 }
 
-// New function for customization repository
-func New(pool *pgxpool.Pool) *RepositoryPostgres {
-	return &RepositoryPostgres{pool: pool}
-}
+// InsertC function for inserting item from a table
+func (repos *RepositoryPostgres) InsertC(c context.Context, rec *model.Record) error {
+	row := repos.pool.QueryRow(c,
+		"INSERT INTO cats (name, type) VALUES ($1, $2) RETURNING id", rec.Name, rec.Type)
 
-// SelectAllC function for selecting items from a table
-func (repos *RepositoryPostgres) SelectAllC(c context.Context) ([]*model.Record, error) {
-	var rec []*model.Record
-
-	row, err := repos.pool.Query(c,
-		"SELECT id, name, type  FROM cats")
-
-	for row.Next() {
-		var rc model.Record
-		err = row.Scan(&rc.ID, &rc.Name, &rc.Type)
-		if err == pgx.ErrNoRows {
-			return rec, err
-		}
-		rec = append(rec, &rc)
+	err := row.Scan(&rec.ID)
+	if err != nil {
+		log.Errorf("Unable to INSERT: %v", err)
+		return err
 	}
 
-	return rec, err
+	return err
 }
 
 // SelectC function for selecting item from a table
@@ -56,18 +48,23 @@ func (repos *RepositoryPostgres) SelectC(c context.Context, id string) (*model.R
 	return &rec, err
 }
 
-// InsertC function for inserting item from a table
-func (repos *RepositoryPostgres) InsertC(c context.Context, rec *model.Record) error {
-	row := repos.pool.QueryRow(c,
-		"INSERT INTO cats (name, type) VALUES ($1, $2) RETURNING id", rec.Name, rec.Type)
+// SelectAllC function for selecting items from a table
+func (repos *RepositoryPostgres) SelectAllC(c context.Context) ([]*model.Record, error) {
+	var rec []*model.Record
 
-	err := row.Scan(&rec.ID)
-	if err != nil {
-		log.Errorf("Unable to INSERT: %v", err)
-		return err
+	row, err := repos.pool.Query(c,
+		"SELECT id, name, type  FROM cats")
+
+	for row.Next() {
+		var rc model.Record
+		err = row.Scan(&rc.ID, &rc.Name, &rc.Type)
+		if err == pgx.ErrNoRows {
+			return rec, err
+		}
+		rec = append(rec, &rc)
 	}
 
-	return err
+	return rec, err
 }
 
 // UpdateC function for updating item from a table

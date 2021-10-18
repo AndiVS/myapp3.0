@@ -8,23 +8,26 @@ import (
 	model "myapp3.0/internal/model"
 )
 
-// SelectAllU function for selecting items from a table
-func (repos *RepositoryPostgres) SelectAllU(c context.Context) ([]*model.User, error) {
-	var rec []*model.User
+type Users interface {
+	InsertU(c context.Context, rec *model.User) error
+	SelectU(c context.Context, username, password string) (*model.User, error)
+	SelectAllU(c context.Context) ([]*model.User, error)
+	UpdateU(c context.Context, username string, isAdmin bool) error
+	DeleteU(c context.Context, username string) error
+}
 
-	row, err := repos.pool.Query(c,
-		"SELECT username, password, is_admin  FROM users")
+// InsertU function for inserting item from a table
+func (repos *RepositoryPostgres) InsertU(c context.Context, rec *model.User) error {
+	row := repos.pool.QueryRow(c,
+		"INSERT INTO users (username, password, is_admin) VALUES ($1, $2, $3) RETURNING username", rec.Username, rec.Password, false)
 
-	for row.Next() {
-		var rc model.User
-		err = row.Scan(&rc.Username, &rc.Password, &rc.IsAdmin)
-		if err == pgx.ErrNoRows {
-			return rec, err
-		}
-		rec = append(rec, &rc)
+	err := row.Scan(&rec.Username)
+	if err != nil {
+		log.Errorf("Unable to INSERT: %v", err)
+		return err
 	}
 
-	return rec, err
+	return err
 }
 
 // SelectU function for selecting item from a table
@@ -44,18 +47,23 @@ func (repos *RepositoryPostgres) SelectU(c context.Context, username, password s
 	return &rc, err
 }
 
-// InsertU function for inserting item from a table
-func (repos *RepositoryPostgres) InsertU(c context.Context, rec *model.User) error {
-	row := repos.pool.QueryRow(c,
-		"INSERT INTO users (username, password, is_admin) VALUES ($1, $2, $3) RETURNING username", rec.Username, rec.Password, false)
+// SelectAllU function for selecting items from a table
+func (repos *RepositoryPostgres) SelectAllU(c context.Context) ([]*model.User, error) {
+	var rec []*model.User
 
-	err := row.Scan(&rec.Username)
-	if err != nil {
-		log.Errorf("Unable to INSERT: %v", err)
-		return err
+	row, err := repos.pool.Query(c,
+		"SELECT username, password, is_admin  FROM users")
+
+	for row.Next() {
+		var rc model.User
+		err = row.Scan(&rc.Username, &rc.Password, &rc.IsAdmin)
+		if err == pgx.ErrNoRows {
+			return rec, err
+		}
+		rec = append(rec, &rc)
 	}
 
-	return err
+	return rec, err
 }
 
 // UpdateU function for updating item from a table
