@@ -8,6 +8,7 @@ import (
 	model "myapp3.0/internal/model"
 )
 
+// Users used for structuring, function for working with users
 type Users interface {
 	InsertU(c context.Context, rec *model.User) error
 	SelectU(c context.Context, username, password string) (*model.User, error)
@@ -17,7 +18,7 @@ type Users interface {
 }
 
 // InsertU function for inserting item from a table
-func (repos *RepositoryPostgres) InsertU(c context.Context, rec *model.User) error {
+func (repos *Postgres) InsertU(c context.Context, rec *model.User) error {
 	row := repos.pool.QueryRow(c,
 		"INSERT INTO users (username, password, is_admin) VALUES ($1, $2, $3) RETURNING username", rec.Username, rec.Password, false)
 
@@ -31,7 +32,7 @@ func (repos *RepositoryPostgres) InsertU(c context.Context, rec *model.User) err
 }
 
 // SelectU function for selecting item from a table
-func (repos *RepositoryPostgres) SelectU(c context.Context, username, password string) (*model.User, error) {
+func (repos *Postgres) SelectU(c context.Context, username, password string) (*model.User, error) {
 	var rc model.User
 	row := repos.pool.QueryRow(c,
 		"SELECT username, password, is_admin  FROM users WHERE username = $1 AND password = $2", username, password)
@@ -48,7 +49,7 @@ func (repos *RepositoryPostgres) SelectU(c context.Context, username, password s
 }
 
 // SelectAllU function for selecting items from a table
-func (repos *RepositoryPostgres) SelectAllU(c context.Context) ([]*model.User, error) {
+func (repos *Postgres) SelectAllU(c context.Context) ([]*model.User, error) {
 	var rec []*model.User
 
 	row, err := repos.pool.Query(c,
@@ -67,10 +68,9 @@ func (repos *RepositoryPostgres) SelectAllU(c context.Context) ([]*model.User, e
 }
 
 // UpdateU function for updating item from a table
-func (repos *RepositoryPostgres) UpdateU(c context.Context, username string, isAdmin bool) error {
+func (repos *Postgres) UpdateU(c context.Context, username string, isAdmin bool) error {
 	_, err := repos.pool.Exec(c,
 		"UPDATE users SET is_admin = $2 WHERE username = $1", username, isAdmin)
-
 	if err != nil {
 		log.Errorf("Failed updating data in db: %s\n", err)
 		return err
@@ -80,7 +80,7 @@ func (repos *RepositoryPostgres) UpdateU(c context.Context, username string, isA
 }
 
 // DeleteU function for deleting item from a table
-func (repos *RepositoryPostgres) DeleteU(c context.Context, username string) error {
+func (repos *Postgres) DeleteU(c context.Context, username string) error {
 	_, err := repos.pool.Exec(c, "DELETE FROM users WHERE username = $1", username)
 
 	if err != nil {

@@ -12,13 +12,20 @@ type Config struct {
 	Host          string `env:"HOST" envDefault:"localhost" json:"host,omitempty"`
 	LogLevel      string `env:"LOGLEVEL" envDefault:"debug" json:"loglevel,omitempty"`
 	DBURLPOSTGRES string `env:"DBURLPOSTGRES" envDefault:"postgres://andeisaldyun:e3cr3t@localhost:5432/catsDB" json:"dburlpostgres,omitempty"`
-	DBURLMONGO    string `env:"DBURLMONGO" envDefault:"mongodb://andeisaldyun:e3cr3t@localhost:27017" json:"dburlmongo,omitempty"`
+	DBURLMONGO    string `env:"DBURLMONGO" envDefault:"mongodb://andeisaldyun:e3cr3t@172.18.0.2:27017" json:"dburlmongo,omitempty"`
 	DBURL         string `env:"DBURL" envDefault:"" json:"dburl,omitempty"`
+
+	/*System     string `env:"SYSTEM" envDefault:"postgres"`
+	DBUser     string `env:"DB_USER" envDefault:"andeisaldyun"`
+	DBPassword string `env:"DB_PASSWORD" envDefault:"e3cr3t"`
+	DBHost     string `env:"DB_HOST" envDefault:"localhost"`
+	DBPort     int    `env:"DB_PORT" envDefault:"5432"`
+	DBName     string `env:"DB_NAME" envDefault:"catsDB"`*/
 
 	System     string `env:"SYSTEM" envDefault:"mongodb"`
 	DBUser     string `env:"DB_USER" envDefault:"andeisaldyun"`
 	DBPassword string `env:"DB_PASSWORD" envDefault:"e3cr3t"`
-	DBHost     string `env:"DB_HOST" envDefault:"localhost"`
+	DBHost     string `env:"DB_HOST" envDefault:"172.18.0.2"`
 	DBPort     int    `env:"DB_PORT" envDefault:"27017"`
 	DBName     string `env:"DB_NAME" envDefault:"catsDB"`
 

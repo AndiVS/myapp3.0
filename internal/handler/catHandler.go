@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"myapp3.0/internal/model"
@@ -40,9 +41,12 @@ func (h *CatHandler) AddC(c echo.Context) error {
 
 // GetC provides cat
 func (h *CatHandler) GetC(c echo.Context) error {
-	id := c.Param("id")
-
-	r, err := h.Service.GetC(c.Request().Context(), id)
+	id := c.Param("_id")
+	_id, err1 := uuid.Parse(id)
+	if err1 != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "bad id")
+	}
+	r, err := h.Service.GetC(c.Request().Context(), _id)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError)
@@ -84,9 +88,13 @@ func (h *CatHandler) UpdateC(c echo.Context) error {
 
 // DeleteC record about cat
 func (h *CatHandler) DeleteC(c echo.Context) error {
-	id := c.Param("id")
+	id := c.Param("_id")
+	_id, err1 := uuid.Parse(id)
+	if err1 != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "bad id ")
+	}
 
-	err := h.Service.DeleteC(c.Request().Context(), id)
+	err := h.Service.DeleteC(c.Request().Context(), _id)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError)

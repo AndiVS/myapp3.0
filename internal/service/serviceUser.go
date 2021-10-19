@@ -26,14 +26,15 @@ type Authorizer struct {
 	refExpireDuration  time.Duration
 }
 
+// NewAuthorizer  for setting new authorizer
 func NewAuthorizer(repositor interface{}, hashSalt string, authenticationKey, refreshKey []byte, auntExpireDuration, refExpireDuration time.Duration) *Authorizer {
-	var mongo *repository.RepositoryMongo
-	var postgres *repository.RepositoryPostgres
+	var mongo *repository.Mongo
+	var postgres *repository.Postgres
 
 	switch reflect.TypeOf(repositor) {
 	case reflect.TypeOf(mongo):
 		return &Authorizer{
-			Rep:                repositor.(*repository.RepositoryMongo),
+			Rep:                repositor.(*repository.Mongo),
 			hashSalt:           hashSalt,
 			authenticationKey:  authenticationKey,
 			refreshKey:         refreshKey,
@@ -42,7 +43,7 @@ func NewAuthorizer(repositor interface{}, hashSalt string, authenticationKey, re
 		}
 	case reflect.TypeOf(postgres):
 		return &Authorizer{
-			Rep:                repositor.(*repository.RepositoryPostgres),
+			Rep:                repositor.(*repository.Postgres),
 			hashSalt:           hashSalt,
 			authenticationKey:  authenticationKey,
 			refreshKey:         refreshKey,
@@ -66,7 +67,12 @@ func (author *Authorizer) AddU(c context.Context, rec *model.User) error {
 	pwd.Write([]byte(author.hashSalt))
 	rec.Password = fmt.Sprintf("%x", pwd.Sum(nil))
 
-	return author.Rep.InsertU(c, rec)
+	_, err := author.Rep.SelectU(c, rec.Username, rec.Password)
+	if err != nil {
+		return author.Rep.InsertU(c, rec)
+	}
+
+	return echo.NewHTTPError(http.StatusInternalServerError, "UNABLE TO INSERT ")
 }
 
 // UpdateU updating record about cat

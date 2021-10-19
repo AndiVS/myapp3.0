@@ -3,28 +3,16 @@ package repository
 import (
 	"context"
 	"errors"
+
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/uuid"
 	model "myapp3.0/internal/model"
 )
 
 // InsertU function for inserting item from a table
-func (rep *RepositoryMongo) InsertU(c context.Context, rec *model.User) error {
-	id, erro := uuid.New()
-	if erro != nil {
-		log.Errorf("asd", erro)
-	}
-
-	cat := model.Us{
-		ID:       id,
-		Username: rec.Username,
-		Password: rec.Password,
-		IsAdmin:  rec.IsAdmin,
-	}
-
-	_, err := rep.collectionU.InsertOne(c, cat)
+func (rep *Mongo) InsertU(c context.Context, rec *model.User) error {
+	_, err := rep.collectionU.InsertOne(c, rec)
 	if err != nil {
 		return err
 	}
@@ -32,7 +20,7 @@ func (rep *RepositoryMongo) InsertU(c context.Context, rec *model.User) error {
 }
 
 // SelectU function for selecting item from a table
-func (rep *RepositoryMongo) SelectU(c context.Context, username, password string) (*model.User, error) {
+func (rep *Mongo) SelectU(c context.Context, username, password string) (*model.User, error) {
 	var rec model.User
 	err := rep.collectionU.FindOne(c, bson.M{"username": username, "password": password}).Decode(&rec)
 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -45,7 +33,7 @@ func (rep *RepositoryMongo) SelectU(c context.Context, username, password string
 }
 
 // SelectAllU function for selecting items from a table
-func (rep *RepositoryMongo) SelectAllU(c context.Context) ([]*model.User, error) {
+func (rep *Mongo) SelectAllU(c context.Context) ([]*model.User, error) {
 	cursor, err := rep.collectionU.Find(c, bson.M{})
 	if err != nil {
 		return nil, err
@@ -68,7 +56,7 @@ func (rep *RepositoryMongo) SelectAllU(c context.Context) ([]*model.User, error)
 }
 
 // UpdateU function for updating item from a table
-func (rep *RepositoryMongo) UpdateU(c context.Context, username string, isAdmin bool) error {
+func (rep *Mongo) UpdateU(c context.Context, username string, isAdmin bool) error {
 	if r, err := rep.collectionU.UpdateOne(c, bson.M{"username": username}, bson.M{"$set": bson.M{"is_admin": isAdmin}}); err != nil {
 		return err
 	} else if r.MatchedCount == 0 {
@@ -79,7 +67,7 @@ func (rep *RepositoryMongo) UpdateU(c context.Context, username string, isAdmin 
 }
 
 // DeleteU function for deleting item from a table
-func (rep *RepositoryMongo) DeleteU(c context.Context, username string) error {
+func (rep *Mongo) DeleteU(c context.Context, username string) error {
 	if r, err := rep.collectionU.DeleteOne(c, bson.M{"username": username}); err != nil {
 		return err
 	} else if r.DeletedCount == 0 {

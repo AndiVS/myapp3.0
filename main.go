@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -15,8 +16,12 @@ import (
 	"myapp3.0/internal/model"
 	"myapp3.0/internal/repository"
 	"myapp3.0/internal/service"
+
 	"time"
 )
+
+const mongodatabase = "mongodb"
+const postgresdatabase = "postgres"
 
 func main() {
 	customFormatter := new(log.TextFormatter)
@@ -38,14 +43,14 @@ func main() {
 
 	var recordRepository repository.Cats
 	switch cfg.System {
-	case "mongodb":
-		mongoClient, mongoDB := getMongo(cfg.DBURL, cfg.DBName)
-		defer mongoClient.Disconnect(context.Background())
-		recordRepository = repository.NewRepository(mongoDB)
-	case "postgres":
+	case mongodatabase:
+		mongoClient, mongoDatabase := getMongo(cfg.DBURL, cfg.DBName)
+		defer mongoClient.Disconnect(context.Background()) //nolint:errcheck,gocritic
+		recordRepository = repository.NewRepository(mongoDatabase)
+	case postgresdatabase:
 		pool := getPostgres(cfg.DBURL)
 		if err != nil {
-			log.Fatalf("Unable to connection to database: %v", err)
+			log.Errorf("Unable to connection to database: %v", err)
 		}
 		defer pool.Close()
 		recordRepository = repository.NewRepository(pool)
@@ -88,20 +93,20 @@ func initHandlers(recordHandler *handler.CatHandler, userHandler *handler.UserHa
 	e.POST("/auth/sign-in", userHandler.SignIn)
 
 	admin := e.Group("/admin")
-	config := middleware.JWTConfig{
+	configuration := middleware.JWTConfig{
 		Claims:     &model.Claims{},
 		SigningKey: []byte(cfg.AuthenticationKey),
 	}
 
-	admin.Use(middleware.JWTWithConfig(config))
+	admin.Use(middleware.JWTWithConfig(configuration))
 	admin.Use(middlewar.Check)
 	admin.Use(userHandler.Service.TokenRefresherMiddleware)
 
 	admin.POST("/records", recordHandler.AddC)
-	admin.GET("/records/:id", recordHandler.GetC)
+	admin.GET("/records/:_id", recordHandler.GetC)
 	admin.GET("/records", recordHandler.GetAllC)
-	admin.PUT("/records/:id", recordHandler.UpdateC)
-	admin.DELETE("/records/:id", recordHandler.DeleteC)
+	admin.PUT("/records/:_id", recordHandler.UpdateC)
+	admin.DELETE("/records/:_id", recordHandler.DeleteC)
 
 	admin.POST("/user", userHandler.AddU)
 	admin.GET("/user", userHandler.GetAllU)
@@ -110,13 +115,10 @@ func initHandlers(recordHandler *handler.CatHandler, userHandler *handler.UserHa
 
 	user := e.Group("/user")
 
-	user.Use(middleware.JWTWithConfig(config))
+	user.Use(middleware.JWTWithConfig(configuration))
 	user.Use(userHandler.Service.TokenRefresherMiddleware)
 
-	user.POST("/records", recordHandler.AddC)
-	user.GET("/user", userHandler.GetAllU)
-
-	user.GET("/records/:id", recordHandler.GetC)
+	user.GET("/records/:_id", recordHandler.GetC)
 	user.GET("/records", recordHandler.GetAllC)
 
 	return e
@@ -131,9 +133,7 @@ func getPostgres(url string) *pgxpool.Pool {
 }
 
 func getMongo(url, dbname string) (*mongo.Client, *mongo.Database) {
-
-	mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://localhost:27017"))
-	//mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI(url))
+	mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI(url))
 	if err != nil {
 		log.Fatalf("Unable to connection to database: %v", err)
 	}
@@ -144,15 +144,14 @@ func getMongo(url, dbname string) (*mongo.Client, *mongo.Database) {
 
 func getURL(cfg *config.Config) (URL string) {
 	var str string
-	if cfg.System == "mongodb" {
-		str = fmt.Sprintf("%s://%s:%s@%s:%d",
+	switch cfg.System {
+	case mongodatabase:
+		str = fmt.Sprintf("%s://%s:%d",
 			cfg.System,
-			cfg.DBUser,
-			cfg.DBPassword,
 			cfg.DBHost,
 			cfg.DBPort,
 		)
-	} else {
+	case postgresdatabase:
 		str = fmt.Sprintf("%s://%s:%s@%s:%d/%s",
 			cfg.System,
 			cfg.DBUser,

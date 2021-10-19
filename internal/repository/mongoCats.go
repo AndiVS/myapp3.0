@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"errors"
+
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -10,8 +12,8 @@ import (
 )
 
 // InsertC function for inserting item from a table
-func (rep *RepositoryMongo) InsertC(c context.Context, rec *model.Record) error {
-
+func (rep *Mongo) InsertC(c context.Context, rec *model.Record) error {
+	rec.ID = uuid.New()
 	_, err := rep.collectionC.InsertOne(c, rec)
 	if err != nil {
 		return err
@@ -20,9 +22,9 @@ func (rep *RepositoryMongo) InsertC(c context.Context, rec *model.Record) error 
 }
 
 // SelectC function for selecting item from a table
-func (rep *RepositoryMongo) SelectC(c context.Context, id string) (*model.Record, error) {
+func (rep *Mongo) SelectC(c context.Context, id uuid.UUID) (*model.Record, error) {
 	var rec model.Record
-	err := rep.collectionC.FindOne(c, bson.M{"id": id}).Decode(&rec)
+	err := rep.collectionC.FindOne(c, bson.M{"_id": id}).Decode(&rec)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		log.Errorf("Not found : %s\n", err)
 		return &rec, err
@@ -33,13 +35,13 @@ func (rep *RepositoryMongo) SelectC(c context.Context, id string) (*model.Record
 }
 
 // SelectAllC function for selecting items from a table
-func (rep *RepositoryMongo) SelectAllC(c context.Context) ([]*model.Record, error) {
+func (rep *Mongo) SelectAllC(c context.Context) ([]*model.Record, error) {
+	var result []*model.Record
+
 	cursor, err := rep.collectionC.Find(c, bson.M{})
 	if err != nil {
 		return nil, err
 	}
-
-	var result []*model.Record
 
 	for cursor.Next(c) {
 		rec := new(model.Record)
@@ -56,8 +58,8 @@ func (rep *RepositoryMongo) SelectAllC(c context.Context) ([]*model.Record, erro
 }
 
 // UpdateC function for updating item from a table
-func (rep *RepositoryMongo) UpdateC(c context.Context, rec *model.Record) error {
-	if r, err := rep.collectionC.UpdateOne(c, bson.M{"id": rec.ID}, bson.M{"$set": bson.M{"name": rec.Name, "type": rec.Type}}); err != nil {
+func (rep *Mongo) UpdateC(c context.Context, rec *model.Record) error {
+	if r, err := rep.collectionC.UpdateOne(c, bson.M{"_id": rec.ID}, bson.M{"$set": bson.M{"name": rec.Name, "type": rec.Type}}); err != nil {
 		return err
 	} else if r.MatchedCount == 0 {
 		log.Errorf("Not found : %s\n", err)
@@ -67,8 +69,8 @@ func (rep *RepositoryMongo) UpdateC(c context.Context, rec *model.Record) error 
 }
 
 // DeleteC function for deleting item from a table
-func (rep *RepositoryMongo) DeleteC(c context.Context, id string) error {
-	if r, err := rep.collectionC.DeleteOne(c, bson.M{"id": id}); err != nil {
+func (rep *Mongo) DeleteC(c context.Context, id uuid.UUID) error {
+	if r, err := rep.collectionC.DeleteOne(c, bson.M{"_id": id}); err != nil {
 		return err
 	} else if r.DeletedCount == 0 {
 		log.Errorf("Not found : %s\n", err)

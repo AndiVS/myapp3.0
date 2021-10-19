@@ -3,10 +3,12 @@ package service
 
 import (
 	"context"
-	"reflect"
 
+	"github.com/google/uuid"
 	"myapp3.0/internal/model"
 	"myapp3.0/internal/repository"
+
+	"reflect"
 )
 
 // Service struct for rep
@@ -14,15 +16,16 @@ type Service struct {
 	Rep repository.Cats
 }
 
+// NewService used for setting services
 func NewService(Rep interface{}) *Service {
-	var mongo *repository.RepositoryMongo
-	var postgres *repository.RepositoryPostgres
+	var mongo *repository.Mongo
+	var postgres *repository.Postgres
 
 	switch reflect.TypeOf(Rep) {
 	case reflect.TypeOf(mongo):
-		return &Service{Rep: Rep.(*repository.RepositoryMongo)}
+		return &Service{Rep: Rep.(*repository.Mongo)}
 	case reflect.TypeOf(postgres):
-		return &Service{Rep: Rep.(*repository.RepositoryPostgres)}
+		return &Service{Rep: Rep.(*repository.Postgres)}
 	}
 	return nil
 }
@@ -33,7 +36,7 @@ func (serv *Service) AddC(c context.Context, rec *model.Record) error {
 }
 
 // GetC provides cat
-func (serv *Service) GetC(c context.Context, id string) (*model.Record, error) {
+func (serv *Service) GetC(c context.Context, id uuid.UUID) (*model.Record, error) {
 	return serv.Rep.SelectC(c, id)
 }
 
@@ -48,6 +51,6 @@ func (serv *Service) UpdateC(c context.Context, rec *model.Record) error {
 }
 
 // DeleteC record about cat
-func (serv *Service) DeleteC(c context.Context, id string) error {
+func (serv *Service) DeleteC(c context.Context, id uuid.UUID) error {
 	return serv.Rep.DeleteC(c, id)
 }
