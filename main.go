@@ -61,7 +61,7 @@ func main() {
 	log.Infof("Starting HTTP server at %s...", cfg.Port)
 
 	recordService := service.NewService(recordRepository)
-	recordHandler := handler.NewC(recordService)
+	recordHandler := handler.NewHandlerCat(recordService)
 
 	userService := service.NewAuthorizer(
 		recordRepository,
@@ -71,7 +71,7 @@ func main() {
 		time.Duration(cfg.AuthenticationTokenDuration)*time.Second,
 		time.Duration(cfg.RefreshTokenDuration)*time.Second,
 	)
-	userHandler := handler.NewU(userService)
+	userHandler := handler.NewHandlerUser(userService)
 
 	e := echo.New()
 	initHandlers(recordHandler, userHandler, e, &cfg)

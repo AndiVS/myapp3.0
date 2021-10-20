@@ -12,11 +12,11 @@ import (
 
 // UserHandler struct that contain repository linc
 type UserHandler struct {
-	Service *service.Authorizer
+	Service service.Users
 }
 
-// NewU add new user handler
-func NewU(Service *service.Authorizer) *UserHandler {
+// NewHandlerUser add new user handler
+func NewHandlerUser(Service service.Users) *UserHandler {
 	return &UserHandler{Service: Service}
 }
 
@@ -30,12 +30,11 @@ func (h *UserHandler) AddU(c echo.Context) error {
 	}
 
 	err := h.Service.AddU(c.Request().Context(), rec)
-
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return echo.NewHTTPError(http.StatusCreated, rec.Username)
+	return c.NoContent(http.StatusCreated)
 }
 
 // GetAllU provides all cats
@@ -43,12 +42,11 @@ func (h *UserHandler) GetAllU(c echo.Context) error {
 	var rec []*model.User
 
 	rec, err := h.Service.GetAllU(c.Request().Context())
-
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return echo.NewHTTPError(http.StatusOK, rec)
+	return c.JSON(http.StatusOK, rec)
 }
 
 // UpdateU updating record about cat
@@ -61,12 +59,15 @@ func (h *UserHandler) UpdateU(c echo.Context) error {
 	}
 
 	err := h.Service.UpdateU(c.Request().Context(), rec.Username, rec.IsAdmin)
-
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		if err.Error() == "not found" {
+			return echo.NewHTTPError(http.StatusNotFound)
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
 	}
 
-	return echo.NewHTTPError(http.StatusOK, "completed successfully")
+	return c.NoContent(http.StatusOK)
 }
 
 // DeleteU record about cat
@@ -74,12 +75,15 @@ func (h *UserHandler) DeleteU(c echo.Context) error {
 	username := c.Param("username")
 
 	err := h.Service.DeleteU(c.Request().Context(), username)
-
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		if err.Error() == "not found" {
+			return echo.NewHTTPError(http.StatusNotFound)
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
 	}
 
-	return echo.NewHTTPError(http.StatusOK, "completed successfully")
+	return c.NoContent(http.StatusOK)
 }
 
 // SignIn generate token

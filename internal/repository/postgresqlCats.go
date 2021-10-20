@@ -3,7 +3,7 @@ package repository
 
 import (
 	"context"
-
+	"errors"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	log "github.com/sirupsen/logrus"
@@ -12,7 +12,7 @@ import (
 
 // Cats used for structuring, function for working with records
 type Cats interface {
-	InsertC(c context.Context, rec *model.Record) error
+	InsertC(c context.Context, rec *model.Record) (uuid.UUID, error)
 	SelectC(c context.Context, id uuid.UUID) (*model.Record, error)
 	SelectAllC(c context.Context) ([]*model.Record, error)
 	UpdateC(c context.Context, rec *model.Record) error
@@ -20,18 +20,18 @@ type Cats interface {
 }
 
 // InsertC function for inserting item from a table
-func (repos *Postgres) InsertC(c context.Context, rec *model.Record) error {
-	rec.ID = uuid.New()
+func (repos *Postgres) InsertC(c context.Context, rec *model.Record) (uuid.UUID, error) {
+	id := uuid.New()
 	row := repos.pool.QueryRow(c,
-		"INSERT INTO cats (_id, name, type) VALUES ($1, $2, $3) RETURNING _id", rec.ID, rec.Name, rec.Type)
+		"INSERT INTO cats (_id, name, type) VALUES ($1, $2, $3) RETURNING _id", id, rec.Name, rec.Type)
 
-	err := row.Scan(&rec.ID)
+	err := row.Scan(id)
 	if err != nil {
 		log.Errorf("Unable to INSERT: %v", err)
-		return err
+		return id, err
 	}
 
-	return err
+	return id, err
 }
 
 // SelectC function for selecting item from a table
@@ -41,8 +41,10 @@ func (repos *Postgres) SelectC(c context.Context, id uuid.UUID) (*model.Record, 
 		"SELECT _id, name, type FROM cats WHERE _id = $1", id)
 
 	err := row.Scan(&rec.ID, &rec.Name, &rec.Type)
-	if err != nil {
-		log.Errorf("Unable to SELECT: %v", err)
+	if errors.Is(err, pgx.ErrNoRows) {
+		log.Errorf("Not found : %s\n", err)
+		return &rec, ErrNotFound
+	} else if err != nil {
 		return &rec, err
 	}
 

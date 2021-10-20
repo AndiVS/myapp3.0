@@ -72,7 +72,7 @@ func (rep *Mongo) DeleteU(c context.Context, username string) error {
 		return err
 	} else if r.DeletedCount == 0 {
 		log.Errorf("Not found : %s\n", err)
-		return err
+		return ErrNotFound
 	}
 	return nil
 }

@@ -16,6 +16,15 @@ import (
 	"time"
 )
 
+type Users interface {
+	AddU(c context.Context, rec *model.User) error
+	GetAllU(c context.Context) ([]*model.User, error)
+	UpdateU(c context.Context, username string, isAdmin bool) error
+	DeleteU(c context.Context, username string) error
+	SignIn(c echo.Context, user *model.User) error
+	TokenRefresherMiddleware(next echo.HandlerFunc) echo.HandlerFunc
+}
+
 // Authorizer for generating token
 type Authorizer struct {
 	Rep                repository.Users
@@ -27,7 +36,7 @@ type Authorizer struct {
 }
 
 // NewAuthorizer  for setting new authorizer
-func NewAuthorizer(repositor interface{}, hashSalt string, authenticationKey, refreshKey []byte, auntExpireDuration, refExpireDuration time.Duration) *Authorizer {
+func NewAuthorizer(repositor interface{}, hashSalt string, authenticationKey, refreshKey []byte, auntExpireDuration, refExpireDuration time.Duration) Users {
 	var mongo *repository.Mongo
 	var postgres *repository.Postgres
 
@@ -55,11 +64,6 @@ func NewAuthorizer(repositor interface{}, hashSalt string, authenticationKey, re
 	return nil
 }
 
-// GetAllU provides all cats
-func (author *Authorizer) GetAllU(c context.Context) ([]*model.User, error) {
-	return author.Rep.SelectAllU(c)
-}
-
 // AddU record about cat
 func (author *Authorizer) AddU(c context.Context, rec *model.User) error {
 	pwd := sha256.New()
@@ -73,6 +77,11 @@ func (author *Authorizer) AddU(c context.Context, rec *model.User) error {
 	}
 
 	return echo.NewHTTPError(http.StatusInternalServerError, "UNABLE TO INSERT ")
+}
+
+// GetAllU provides all cats
+func (author *Authorizer) GetAllU(c context.Context) ([]*model.User, error) {
+	return author.Rep.SelectAllU(c)
 }
 
 // UpdateU updating record about cat

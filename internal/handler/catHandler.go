@@ -13,11 +13,11 @@ import (
 
 // CatHandler struct that contain repository linc
 type CatHandler struct {
-	Service *service.Service
+	Service service.Cats
 }
 
-// NewC function for customization handler
-func NewC(Service *service.Service) *CatHandler {
+// NewHandlerCat function for customization handler
+func NewHandlerCat(Service service.Cats) *CatHandler {
 	return &CatHandler{Service: Service}
 }
 
@@ -30,13 +30,12 @@ func (h *CatHandler) AddC(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err := h.Service.AddC(c.Request().Context(), rec)
-
+	id, err := h.Service.AddC(c.Request().Context(), rec)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return echo.NewHTTPError(http.StatusCreated, rec.ID)
+	return c.JSON(http.StatusCreated, id)
 }
 
 // GetC provides cat
@@ -44,15 +43,19 @@ func (h *CatHandler) GetC(c echo.Context) error {
 	id := c.Param("_id")
 	_id, err1 := uuid.Parse(id)
 	if err1 != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "bad id")
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
+
 	r, err := h.Service.GetC(c.Request().Context(), _id)
-
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		if err.Error() == "not found" {
+			return echo.NewHTTPError(http.StatusNotFound)
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
 	}
 
-	return echo.NewHTTPError(http.StatusOK, r)
+	return c.JSON(http.StatusOK, r)
 }
 
 // GetAllC provides all cats
@@ -62,10 +65,10 @@ func (h *CatHandler) GetAllC(c echo.Context) error {
 	rec, err := h.Service.GetAllC(c.Request().Context())
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return echo.NewHTTPError(http.StatusOK, rec)
+	return c.JSON(http.StatusOK, rec)
 }
 
 // UpdateC updating record about cat
@@ -78,12 +81,15 @@ func (h *CatHandler) UpdateC(c echo.Context) error {
 	}
 
 	err := h.Service.UpdateC(c.Request().Context(), rec)
-
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		if err.Error() == "not found" {
+			return echo.NewHTTPError(http.StatusNotFound)
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
 	}
 
-	return echo.NewHTTPError(http.StatusOK, "completed successfully")
+	return c.NoContent(http.StatusOK)
 }
 
 // DeleteC record about cat
@@ -91,14 +97,17 @@ func (h *CatHandler) DeleteC(c echo.Context) error {
 	id := c.Param("_id")
 	_id, err1 := uuid.Parse(id)
 	if err1 != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "bad id ")
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
 	err := h.Service.DeleteC(c.Request().Context(), _id)
-
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		if err.Error() == "not found" {
+			return echo.NewHTTPError(http.StatusNotFound)
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
 	}
 
-	return echo.NewHTTPError(http.StatusOK, "completed successfully")
+	return c.NoContent(http.StatusOK)
 }

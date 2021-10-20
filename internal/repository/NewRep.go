@@ -1,10 +1,16 @@
 package repository
 
 import (
+	"errors"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"reflect"
+)
+
+var (
+	// ErrNotFound means entity is not found in repository
+	ErrNotFound = errors.New("not found")
 )
 
 // Postgres struct for pool

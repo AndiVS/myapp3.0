@@ -15,19 +15,19 @@ type Config struct {
 	DBURLMONGO    string `env:"DBURLMONGO" envDefault:"mongodb://andeisaldyun:e3cr3t@172.18.0.2:27017" json:"dburlmongo,omitempty"`
 	DBURL         string `env:"DBURL" envDefault:"" json:"dburl,omitempty"`
 
-	/*System     string `env:"SYSTEM" envDefault:"postgres"`
+	System     string `env:"SYSTEM" envDefault:"postgres"`
 	DBUser     string `env:"DB_USER" envDefault:"andeisaldyun"`
 	DBPassword string `env:"DB_PASSWORD" envDefault:"e3cr3t"`
 	DBHost     string `env:"DB_HOST" envDefault:"localhost"`
 	DBPort     int    `env:"DB_PORT" envDefault:"5432"`
-	DBName     string `env:"DB_NAME" envDefault:"catsDB"`*/
+	DBName     string `env:"DB_NAME" envDefault:"catsDB"`
 
-	System     string `env:"SYSTEM" envDefault:"mongodb"`
+	/*System     string `env:"SYSTEM" envDefault:"mongodb"`
 	DBUser     string `env:"DB_USER" envDefault:"andeisaldyun"`
 	DBPassword string `env:"DB_PASSWORD" envDefault:"e3cr3t"`
 	DBHost     string `env:"DB_HOST" envDefault:"172.18.0.2"`
 	DBPort     int    `env:"DB_PORT" envDefault:"27017"`
-	DBName     string `env:"DB_NAME" envDefault:"catsDB"`
+	DBName     string `env:"DB_NAME" envDefault:"catsDB"`*/
 
 	HashSalt                    string `env:"HASHSALT" envDefault:"HAsh_salt" json:"hash_salt,omitempty"`
 	AuthenticationKey           string `env:"AUTHENTICATIONKEY" envDefault:"authentication_key" json:"authentication_key,omitempty"`

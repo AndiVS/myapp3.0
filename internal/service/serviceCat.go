@@ -3,7 +3,6 @@ package service
 
 import (
 	"context"
-
 	"github.com/google/uuid"
 	"myapp3.0/internal/model"
 	"myapp3.0/internal/repository"
@@ -11,13 +10,21 @@ import (
 	"reflect"
 )
 
+type Cats interface {
+	AddC(c context.Context, rec *model.Record) (uuid.UUID, error)
+	GetC(c context.Context, id uuid.UUID) (*model.Record, error)
+	GetAllC(c context.Context) ([]*model.Record, error)
+	UpdateC(c context.Context, rec *model.Record) error
+	DeleteC(c context.Context, id uuid.UUID) error
+}
+
 // Service struct for rep
 type Service struct {
 	Rep repository.Cats
 }
 
 // NewService used for setting services
-func NewService(Rep interface{}) *Service {
+func NewService(Rep interface{}) Cats {
 	var mongo *repository.Mongo
 	var postgres *repository.Postgres
 
@@ -31,7 +38,7 @@ func NewService(Rep interface{}) *Service {
 }
 
 // AddC record about cat
-func (serv *Service) AddC(c context.Context, rec *model.Record) error {
+func (serv *Service) AddC(c context.Context, rec *model.Record) (uuid.UUID, error) {
 	return serv.Rep.InsertC(c, rec)
 }
 

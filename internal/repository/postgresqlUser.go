@@ -81,10 +81,13 @@ func (repos *Postgres) UpdateU(c context.Context, username string, isAdmin bool)
 
 // DeleteU function for deleting item from a table
 func (repos *Postgres) DeleteU(c context.Context, username string) error {
-	_, err := repos.pool.Exec(c, "DELETE FROM users WHERE username = $1", username)
+	ct, err := repos.pool.Exec(c, "DELETE FROM users WHERE username = $1", username)
 
 	if err != nil {
 		return err
+	} else if ct.RowsAffected() == 0 {
+		log.Errorf("Not found : %s\n", err)
+		return ErrNotFound
 	}
 
 	return nil
