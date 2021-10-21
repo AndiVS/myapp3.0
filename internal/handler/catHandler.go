@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"myapp3.0/internal/model"
+	"myapp3.0/internal/repository"
 	"myapp3.0/internal/service"
 
 	"net/http"
@@ -48,11 +49,10 @@ func (h *CatHandler) GetC(c echo.Context) error {
 
 	r, err := h.Service.GetC(c.Request().Context(), _id)
 	if err != nil {
-		if err.Error() == "not found" {
+		if err.Error() == repository.ErrNotFound.Error() {
 			return echo.NewHTTPError(http.StatusNotFound)
-		} else {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, r)
@@ -82,11 +82,10 @@ func (h *CatHandler) UpdateC(c echo.Context) error {
 
 	err := h.Service.UpdateC(c.Request().Context(), rec)
 	if err != nil {
-		if err.Error() == "not found" {
+		if err.Error() == repository.ErrNotFound.Error() {
 			return echo.NewHTTPError(http.StatusNotFound)
-		} else {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -102,11 +101,10 @@ func (h *CatHandler) DeleteC(c echo.Context) error {
 
 	err := h.Service.DeleteC(c.Request().Context(), _id)
 	if err != nil {
-		if err.Error() == "not found" {
+		if err.Error() == repository.ErrNotFound.Error() {
 			return echo.NewHTTPError(http.StatusNotFound)
-		} else {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.NoContent(http.StatusOK)

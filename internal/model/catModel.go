@@ -9,8 +9,3 @@ type Record struct {
 	Name string    `param:"name" query:"name" header:"name" form:"name" json:"name" xml:"name" bson:"name"`
 	Type string    `param:"type" query:"type" header:"type" form:"type" json:"type" xml:"type" bson:"type"`
 }
-
-type ADDRecord struct {
-	Name string `param:"name" query:"name" header:"name" form:"name" json:"name" xml:"name" bson:"name"`
-	Type string `param:"type" query:"type" header:"type" form:"type" json:"type" xml:"type" bson:"type"`
-}

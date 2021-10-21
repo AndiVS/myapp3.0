@@ -13,7 +13,6 @@ import (
 
 // InsertC function for inserting item from a table
 func (rep *Mongo) InsertC(c context.Context, rec *model.Record) (uuid.UUID, error) {
-
 	_, err := rep.collectionC.InsertOne(c, rec)
 	if err != nil {
 		return rec.ID, err
@@ -60,8 +59,6 @@ func (rep *Mongo) SelectAllC(c context.Context) ([]*model.Record, error) {
 // UpdateC function for updating item from a table
 func (rep *Mongo) UpdateC(c context.Context, rec *model.Record) error {
 	if r, err := rep.collectionC.UpdateOne(c, bson.M{"_id": rec.ID}, bson.M{"$set": bson.M{"name": rec.Name, "type": rec.Type}}); err != nil {
-		return err
-	} else if r.MatchedCount == 0 {
 		return err
 	} else if r.MatchedCount == 0 {
 		return ErrNotFound

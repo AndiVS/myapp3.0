@@ -4,17 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"myapp3.0/internal/model"
-	"myapp3.0/internal/service"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"myapp3.0/internal/model"
+	"myapp3.0/internal/repository"
+	"myapp3.0/internal/service"
+
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 )
 
 var (
@@ -37,7 +39,7 @@ func TestAddC(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New()
-	req := model.Record{uuid.Nil, "thirdCat", "thirdType"}
+	req := model.Record{ID: uuid.Nil, Name: "thirdCat", Type: "thirdType"}
 	s.On("AddC", mockContext, &req).Return(id, nil)
 	ctx, rec := setup(http.MethodPost, &req)
 
@@ -55,7 +57,7 @@ func TestAddCServiceFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New()
-	req := model.Record{id, "thirdCat", "thirdType"}
+	req := model.Record{ID: id, Name: "thirdCat", Type: "thirdType"}
 	s.On("AddC", mockContext, &req).Return(nil, errSomeError)
 	ctx, _ := setup(http.MethodPost, &req)
 
@@ -107,7 +109,7 @@ func TestGetCNotFound(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New().String()
-	s.On("GetC", mockContext, mock.AnythingOfType("uuid.UUID")).Return(model.Record{}, errors.New("not found"))
+	s.On("GetC", mockContext, mock.AnythingOfType("uuid.UUID")).Return(model.Record{}, repository.ErrNotFound)
 	ctx, _ := setup(http.MethodGet, nil)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues(id)
@@ -209,7 +211,7 @@ func TestDeleteCNotFound(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New().String()
-	s.On("DeleteC", mockContext, mock.AnythingOfType("uuid.UUID")).Return(errors.New("not found"))
+	s.On("DeleteC", mockContext, mock.AnythingOfType("uuid.UUID")).Return(repository.ErrNotFound)
 	ctx, _ := setup(http.MethodDelete, nil)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues(id)
@@ -227,7 +229,7 @@ func TestUpdateC(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := firstC.ID
-	req := model.Record{id, "thirdCat", "thirdType"}
+	req := model.Record{ID: id, Name: "thirdCat", Type: "thirdType"}
 	s.On("UpdateC", mockContext, &req).Return(nil)
 	ctx, rec := setup(http.MethodPut, &req)
 	ctx.SetParamNames("_id")
@@ -246,7 +248,7 @@ func TestUpdateC(t *testing.T) {
 func TestUpdateCMalformedId(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
-	req := model.Record{uuid.Nil, "thirdCat", "thirdType"}
+	req := model.Record{ID: uuid.Nil, Name: "thirdCat", Type: "thirdType"}
 	ctx, _ := setup(http.MethodPut, &req)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues("malformed-uuid")
@@ -264,8 +266,8 @@ func TestUpdateCNotFound(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New()
-	req := model.Record{id, "thirdCat", "thirdType"}
-	s.On("UpdateC", mockContext, &req).Return(errors.New("not found"))
+	req := model.Record{ID: id, Name: "thirdCat", Type: "thirdType"}
+	s.On("UpdateC", mockContext, &req).Return(repository.ErrNotFound)
 	ctx, _ := setup(http.MethodPut, &req)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues(id.String())

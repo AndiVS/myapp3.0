@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+
 	"github.com/google/uuid"
 	"myapp3.0/internal/model"
 	"myapp3.0/internal/repository"
@@ -10,6 +11,7 @@ import (
 	"reflect"
 )
 
+// Cats interface for mocks
 type Cats interface {
 	AddC(c context.Context, rec *model.Record) (uuid.UUID, error)
 	GetC(c context.Context, id uuid.UUID) (*model.Record, error)

@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"errors"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 	"myapp3.0/internal/model"
+	"myapp3.0/internal/repository"
 	"myapp3.0/internal/service"
+
 	"net/http"
 	"testing"
 )
@@ -27,7 +28,7 @@ var (
 func TestAddU(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
-	req := model.User{"thirdUser", "thirdUser", false}
+	req := model.User{Username: "thirdUser", Password: "thirdUser", IsAdmin: false}
 	s.On("AddU", mockContext, &req).Return(nil)
 	ctx, rec := setup(http.MethodPost, &req)
 
@@ -44,7 +45,7 @@ func TestAddU(t *testing.T) {
 func TestAddUServiceFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
-	req := model.User{"thirdUser", "thirdUser", false}
+	req := model.User{Username: "thirdUser", Password: "thirdUser", IsAdmin: false}
 	s.On("AddU", mockContext, &req).Return(errSomeError)
 	ctx, _ := setup(http.MethodPost, &req)
 
@@ -111,7 +112,7 @@ func TestDeleteUNotFound(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
 	usrename := " "
-	s.On("DeleteU", mockContext, usrename).Return(errors.New("not found"))
+	s.On("DeleteU", mockContext, usrename).Return(repository.ErrNotFound)
 	ctx, _ := setup(http.MethodDelete, nil)
 	ctx.SetParamNames("username")
 	ctx.SetParamValues(usrename)
@@ -146,7 +147,7 @@ func TestDeleteURepositoryFailed(t *testing.T) {
 func TestUpdateU(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
-	req := model.User{"thirdUser", "thirdUser", false}
+	req := model.User{Username: "thirdUser", Password: "thirdUser", IsAdmin: false}
 	s.On("UpdateU", mockContext, req.Username, req.IsAdmin).Return(nil)
 	ctx, rec := setup(http.MethodPut, &req)
 	ctx.SetParamNames("username")
@@ -165,8 +166,8 @@ func TestUpdateU(t *testing.T) {
 func TestUpdateUNotFound(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
-	req := model.User{"thirdUser", "thirdUser", false}
-	s.On("UpdateU", mockContext, req.Username, req.IsAdmin).Return(errors.New("not found"))
+	req := model.User{Username: "thirdUser", Password: "thirdUser", IsAdmin: false}
+	s.On("UpdateU", mockContext, req.Username, req.IsAdmin).Return(repository.ErrNotFound)
 	ctx, _ := setup(http.MethodPut, nil)
 	ctx.SetParamNames("username")
 	ctx.SetParamValues(req.Username)
@@ -183,7 +184,7 @@ func TestUpdateUNotFound(t *testing.T) {
 func TestUpdateURepositoryFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
-	req := model.User{"thirdUser", "thirdUser", false}
+	req := model.User{Username: "thirdUser", Password: "thirdUser", IsAdmin: false}
 	s.On("UpdateU", mockContext, req.Username, req.IsAdmin).Return(errSomeError)
 	ctx, _ := setup(http.MethodPut, nil)
 	ctx.SetParamNames("username")

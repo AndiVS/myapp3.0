@@ -16,6 +16,7 @@ import (
 	"time"
 )
 
+// Users interface for mocks
 type Users interface {
 	AddU(c context.Context, rec *model.User) error
 	GetAllU(c context.Context) ([]*model.User, error)
