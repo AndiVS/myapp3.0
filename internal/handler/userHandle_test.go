@@ -125,6 +125,24 @@ func TestDeleteUNotFound(t *testing.T) {
 	require.Equal(t, echo.NewHTTPError(http.StatusNotFound), err)
 }
 
+func TestDeleteURepositoryFailed(t *testing.T) {
+	// Arrange
+	s := new(service.MockUsers)
+	usrename := " "
+	s.On("DeleteU", mockContext, usrename).Return(errSomeError)
+	ctx, _ := setup(http.MethodDelete, nil)
+	ctx.SetParamNames("username")
+	ctx.SetParamValues(usrename)
+
+	// Act
+	handl := NewHandlerUser(s)
+	err := handl.DeleteU(ctx)
+
+	// Assert
+	require.Error(t, err)
+	require.Equal(t, echo.NewHTTPError(http.StatusInternalServerError, errSomeError.Error()), err)
+}
+
 func TestUpdateU(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
@@ -142,4 +160,40 @@ func TestUpdateU(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Equal(t, "", rec.Body.String())
+}
+
+func TestUpdateUNotFound(t *testing.T) {
+	// Arrange
+	s := new(service.MockUsers)
+	req := model.User{"thirdUser", "thirdUser", false}
+	s.On("UpdateU", mockContext, req.Username, req.IsAdmin).Return(errors.New("not found"))
+	ctx, _ := setup(http.MethodPut, nil)
+	ctx.SetParamNames("username")
+	ctx.SetParamValues(req.Username)
+
+	// Act
+	handl := NewHandlerUser(s)
+	err := handl.UpdateU(ctx)
+
+	// Assert
+	require.Error(t, err)
+	require.Equal(t, echo.NewHTTPError(http.StatusNotFound), err)
+}
+
+func TestUpdateURepositoryFailed(t *testing.T) {
+	// Arrange
+	s := new(service.MockUsers)
+	req := model.User{"thirdUser", "thirdUser", false}
+	s.On("UpdateU", mockContext, req.Username, req.IsAdmin).Return(errSomeError)
+	ctx, _ := setup(http.MethodPut, nil)
+	ctx.SetParamNames("username")
+	ctx.SetParamValues(req.Username)
+
+	// Act
+	handl := NewHandlerUser(s)
+	err := handl.UpdateU(ctx)
+
+	// Assert
+	require.Error(t, err)
+	require.Equal(t, echo.NewHTTPError(http.StatusInternalServerError, errSomeError.Error()), err)
 }
