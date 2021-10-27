@@ -26,7 +26,7 @@ func (repos *Postgres) InsertC(c context.Context, rec *model.Record) (uuid.UUID,
 	row := repos.pool.QueryRow(c,
 		"INSERT INTO cats (_id, name, type) VALUES ($1, $2, $3) RETURNING _id", id, rec.Name, rec.Type)
 
-	err := row.Scan(id)
+	err := row.Scan(&id)
 	if err != nil {
 		log.Errorf("Unable to INSERT: %v", err)
 		return id, err
