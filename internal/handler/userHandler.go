@@ -7,7 +7,6 @@ import (
 	"myapp3.0/internal/model"
 	"myapp3.0/internal/repository"
 	"myapp3.0/internal/service"
-
 	"net/http"
 )
 
@@ -21,45 +20,45 @@ func NewHandlerUser(Service service.Users) *UserHandler {
 	return &UserHandler{Service: Service}
 }
 
-// AddU record about cat
-func (h *UserHandler) AddU(c echo.Context) error {
-	rec := new(model.User)
+// GetUser provides user
+func (h *UserHandler) GetUser(c echo.Context) error {
+	user := new(model.User)
 
-	if err := c.Bind(rec); err != nil {
+	if err := c.Bind(user); err != nil {
 		log.Errorf("Bind fail : %v\n", err)
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err := h.Service.AddU(c.Request().Context(), rec)
+	user, err := h.Service.GetUser(c.Request().Context(), user.Username)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.NoContent(http.StatusCreated)
+	return c.JSON(http.StatusOK, user)
 }
 
-// GetAllU provides all cats
-func (h *UserHandler) GetAllU(c echo.Context) error {
-	var rec []*model.User
+// GetAllUser provides all users
+func (h *UserHandler) GetAllUser(c echo.Context) error {
+	var user []*model.User
 
-	rec, err := h.Service.GetAllU(c.Request().Context())
+	user, err := h.Service.GetAllUser(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, rec)
+	return c.JSON(http.StatusOK, user)
 }
 
-// UpdateU updating record about cat
-func (h *UserHandler) UpdateU(c echo.Context) error {
-	rec := new(model.User)
+// UpdateUser updating record about user
+func (h *UserHandler) UpdateUser(c echo.Context) error {
+	user := new(model.User)
 
-	if err := c.Bind(rec); err != nil {
+	if err := c.Bind(user); err != nil {
 		log.Errorf("Bind fail : %v\n", err)
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err := h.Service.UpdateU(c.Request().Context(), rec.Username, rec.IsAdmin)
+	err := h.Service.UpdateUser(c.Request().Context(), user.Username, user.IsAdmin)
 	if err != nil {
 		if err.Error() == repository.ErrNotFound.Error() {
 			return echo.NewHTTPError(http.StatusNotFound)
@@ -70,11 +69,11 @@ func (h *UserHandler) UpdateU(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-// DeleteU record about cat
-func (h *UserHandler) DeleteU(c echo.Context) error {
+// DeleteUser delete record about user
+func (h *UserHandler) DeleteUser(c echo.Context) error {
 	username := c.Param("username")
 
-	err := h.Service.DeleteU(c.Request().Context(), username)
+	err := h.Service.DeleteUser(c.Request().Context(), username)
 	if err != nil {
 		if err.Error() == "not found" {
 			return echo.NewHTTPError(http.StatusNotFound)
@@ -83,21 +82,4 @@ func (h *UserHandler) DeleteU(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
-}
-
-// SignIn generate token
-func (h *UserHandler) SignIn(c echo.Context) error {
-	rec := new(model.User)
-
-	if err := c.Bind(rec); err != nil {
-		log.Errorf("Bind fail : %v\n", err)
-		return echo.NewHTTPError(http.StatusBadRequest)
-	}
-
-	err := h.Service.SignIn(c, rec)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
-	}
-
-	return err
 }

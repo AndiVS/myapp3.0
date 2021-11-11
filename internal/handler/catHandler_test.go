@@ -22,30 +22,30 @@ import (
 var (
 	mockContext  = mock.Anything
 	errSomeError = errors.New("some error")
-	firstC       = model.Record{
+	firstCat     = model.Cat{
 		ID:   uuid.New(),
 		Name: "firstCat",
 		Type: "firstType",
 	}
-	secondC = model.Record{
+	secondCat = model.Cat{
 		ID:   uuid.New(),
 		Name: "secondCat",
 		Type: "secondType",
 	}
-	cats = []*model.Record{&firstC, &secondC}
+	cats = []*model.Cat{&firstCat, &secondCat}
 )
 
-func TestAddC(t *testing.T) {
+func TestAddCat(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New()
-	req := model.Record{ID: uuid.Nil, Name: "thirdCat", Type: "thirdType"}
-	s.On("AddC", mockContext, &req).Return(id, nil)
+	req := model.Cat{ID: uuid.Nil, Name: "thirdCat", Type: "thirdType"}
+	s.On("AddCat", mockContext, &req).Return(id, nil)
 	ctx, rec := setup(http.MethodPost, &req)
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.AddC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.AddCat(ctx)
 
 	// Assert
 	require.NoError(t, err)
@@ -53,43 +53,43 @@ func TestAddC(t *testing.T) {
 	require.Equal(t, mustEncodeJSON(id.String()), rec.Body.String())
 }
 
-func TestAddCServiceFailed(t *testing.T) {
+func TestAddCatServiceFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New()
-	req := model.Record{ID: id, Name: "thirdCat", Type: "thirdType"}
-	s.On("AddC", mockContext, &req).Return(nil, errSomeError)
+	req := model.Cat{ID: id, Name: "thirdCat", Type: "thirdType"}
+	s.On("AddCat", mockContext, &req).Return(nil, errSomeError)
 	ctx, _ := setup(http.MethodPost, &req)
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.AddC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.AddCat(ctx)
 
 	// Assert
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusInternalServerError, errSomeError.Error()), err)
 }
 
-func TestGetC(t *testing.T) {
+func TestGetCat(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
-	id := firstC.ID
-	s.On("GetC", mockContext, id).Return(firstC, nil)
+	id := firstCat.ID
+	s.On("GetCat", mockContext, id).Return(firstCat, nil)
 	ctx, rec := setup(http.MethodGet, nil)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues(id.String())
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.GetC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.GetCat(ctx)
 
 	// Assert
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, mustEncodeJSON(firstC), rec.Body.String())
+	require.Equal(t, mustEncodeJSON(firstCat), rec.Body.String())
 }
 
-func TestGetCMalformedId(t *testing.T) {
+func TestGetCatMalformedId(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	ctx, _ := setup(http.MethodGet, nil)
@@ -97,59 +97,59 @@ func TestGetCMalformedId(t *testing.T) {
 	ctx.SetParamValues("malformed-uuid")
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.GetC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.GetCat(ctx)
 
 	// Assert
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusBadRequest), err)
 }
 
-func TestGetCNotFound(t *testing.T) {
+func TestGetCatNotFound(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New().String()
-	s.On("GetC", mockContext, mock.AnythingOfType("uuid.UUID")).Return(model.Record{}, repository.ErrNotFound)
+	s.On("GetCat", mockContext, mock.AnythingOfType("uuid.UUID")).Return(model.Cat{}, repository.ErrNotFound)
 	ctx, _ := setup(http.MethodGet, nil)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues(id)
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.GetC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.GetCat(ctx)
 
 	// Assert
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusNotFound), err)
 }
 
-func TestGetCRepositoryFailed(t *testing.T) {
+func TestGetCatRepositoryFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New().String()
-	s.On("GetC", mockContext, mock.AnythingOfType("uuid.UUID")).Return(model.Record{}, errSomeError)
+	s.On("GetCat", mockContext, mock.AnythingOfType("uuid.UUID")).Return(model.Cat{}, errSomeError)
 	ctx, _ := setup(http.MethodGet, nil)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues(id)
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.GetC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.GetCat(ctx)
 
 	// Assert
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusInternalServerError, errSomeError.Error()), err)
 }
 
-func TestGetAllC(t *testing.T) {
+func TestGetAllCat(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
-	s.On("GetAllC", mockContext).Return(cats, nil)
+	s.On("GetAllCat", mockContext).Return(cats, nil)
 	ctx, rec := setup(http.MethodGet, nil)
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.GetAllC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.GetAllCat(ctx)
 
 	// Assert
 	require.NoError(t, err)
@@ -157,15 +157,15 @@ func TestGetAllC(t *testing.T) {
 	require.Equal(t, mustEncodeJSON(cats), rec.Body.String())
 }
 
-func TestGetAllCRepositoryFailed(t *testing.T) {
+func TestGetAllCatRepositoryFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
-	s.On("GetAllC", mockContext).Return(nil, errSomeError)
+	s.On("GetAllCat", mockContext).Return(nil, errSomeError)
 	ctx, _ := setup(http.MethodGet, nil)
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.GetAllC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.GetAllCat(ctx)
 
 	// Assert
 	require.Error(t, err)
@@ -175,15 +175,15 @@ func TestGetAllCRepositoryFailed(t *testing.T) {
 func TestDeleteCat(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
-	id := firstC.ID
-	s.On("DeleteC", mockContext, id).Return(nil)
+	id := firstCat.ID
+	s.On("DeleteCat", mockContext, id).Return(nil)
 	ctx, rec := setup(http.MethodDelete, nil)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues(id.String())
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.DeleteC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.DeleteCat(ctx)
 
 	// Assert
 	require.NoError(t, err)
@@ -191,7 +191,7 @@ func TestDeleteCat(t *testing.T) {
 	require.Equal(t, "", rec.Body.String())
 }
 
-func TestDeleteCFailed(t *testing.T) {
+func TestDeleteCatFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	ctx, _ := setup(http.MethodDelete, nil)
@@ -199,45 +199,45 @@ func TestDeleteCFailed(t *testing.T) {
 	ctx.SetParamValues("malformed-uuid")
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.DeleteC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.DeleteCat(ctx)
 
 	// Assert
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusBadRequest), err)
 }
 
-func TestDeleteCNotFound(t *testing.T) {
+func TestDeleteCatNotFound(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New().String()
-	s.On("DeleteC", mockContext, mock.AnythingOfType("uuid.UUID")).Return(repository.ErrNotFound)
+	s.On("DeleteCat", mockContext, mock.AnythingOfType("uuid.UUID")).Return(repository.ErrNotFound)
 	ctx, _ := setup(http.MethodDelete, nil)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues(id)
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.DeleteC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.DeleteCat(ctx)
 
 	// Assert
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusNotFound), err)
 }
 
-func TestUpdateC(t *testing.T) {
+func TestUpdateCat(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
-	id := firstC.ID
-	req := model.Record{ID: id, Name: "thirdCat", Type: "thirdType"}
-	s.On("UpdateC", mockContext, &req).Return(nil)
+	id := firstCat.ID
+	req := model.Cat{ID: id, Name: "thirdCat", Type: "thirdType"}
+	s.On("UpdateCat", mockContext, &req).Return(nil)
 	ctx, rec := setup(http.MethodPut, &req)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues(id.String())
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.UpdateC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.UpdateCat(ctx)
 
 	// Assert
 	require.NoError(t, err)
@@ -245,36 +245,36 @@ func TestUpdateC(t *testing.T) {
 	require.Equal(t, "", rec.Body.String())
 }
 
-func TestUpdateCMalformedId(t *testing.T) {
+func TestUpdateCatMalformedId(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
-	req := model.Record{ID: uuid.Nil, Name: "thirdCat", Type: "thirdType"}
+	req := model.Cat{ID: uuid.Nil, Name: "thirdCat", Type: "thirdType"}
 	ctx, _ := setup(http.MethodPut, &req)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues("malformed-uuid")
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.UpdateC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.UpdateCat(ctx)
 
 	// Assert
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusBadRequest), err)
 }
 
-func TestUpdateCNotFound(t *testing.T) {
+func TestUpdateCatNotFound(t *testing.T) {
 	// Arrange
 	s := new(service.MockCats)
 	id := uuid.New()
-	req := model.Record{ID: id, Name: "thirdCat", Type: "thirdType"}
-	s.On("UpdateC", mockContext, &req).Return(repository.ErrNotFound)
+	req := model.Cat{ID: id, Name: "thirdCat", Type: "thirdType"}
+	s.On("UpdateCat", mockContext, &req).Return(repository.ErrNotFound)
 	ctx, _ := setup(http.MethodPut, &req)
 	ctx.SetParamNames("_id")
 	ctx.SetParamValues(id.String())
 
 	// Act
-	handl := NewHandlerCat(s)
-	err := handl.UpdateC(ctx)
+	handle := NewHandlerCat(s)
+	err := handle.UpdateCat(ctx)
 
 	// Assert
 	require.Error(t, err)

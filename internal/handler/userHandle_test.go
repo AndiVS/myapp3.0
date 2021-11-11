@@ -25,11 +25,12 @@ var (
 	users = []*model.User{&firstU, &secondU}
 )
 
-func TestAddU(t *testing.T) {
+/*
+func TestSingUp(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
 	req := model.User{Username: "thirdUser", Password: "thirdUser", IsAdmin: false}
-	s.On("AddU", mockContext, &req).Return(nil)
+	s.On("SignUp", mockContext, &req).Return(nil)
 	ctx, rec := setup(http.MethodPost, &req)
 
 	// Act
@@ -46,7 +47,7 @@ func TestAddUServiceFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
 	req := model.User{Username: "thirdUser", Password: "thirdUser", IsAdmin: false}
-	s.On("AddU", mockContext, &req).Return(errSomeError)
+	s.On("SignUp", mockContext, &req).Return(errSomeError)
 	ctx, _ := setup(http.MethodPost, &req)
 
 	// Act
@@ -57,16 +58,16 @@ func TestAddUServiceFailed(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusInternalServerError, errSomeError.Error()), err)
 }
-
-func TestGetAllU(t *testing.T) {
+*/
+func TestGetAllUser(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
-	s.On("GetAllU", mockContext).Return(users, nil)
+	s.On("GetAllUser", mockContext).Return(users, nil)
 	ctx, rec := setup(http.MethodGet, nil)
 
 	// Act
 	handl := NewHandlerUser(s)
-	err := handl.GetAllU(ctx)
+	err := handl.GetAllUser(ctx)
 
 	// Assert
 	require.NoError(t, err)
@@ -74,33 +75,33 @@ func TestGetAllU(t *testing.T) {
 	require.Equal(t, mustEncodeJSON(users), rec.Body.String())
 }
 
-func TestGetAllURepositoryFailed(t *testing.T) {
+func TestGetAllUserRepositoryFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
-	s.On("GetAllU", mockContext).Return(nil, errSomeError)
+	s.On("GetAllUser", mockContext).Return(nil, errSomeError)
 	ctx, _ := setup(http.MethodGet, nil)
 
 	// Act
 	handl := NewHandlerUser(s)
-	err := handl.GetAllU(ctx)
+	err := handl.GetAllUser(ctx)
 
 	// Assert
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusInternalServerError, errSomeError.Error()), err)
 }
 
-func TestDeleteU(t *testing.T) {
+func TestDeleteUser(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
-	usrename := firstU.Username
-	s.On("DeleteU", mockContext, usrename).Return(nil)
+	username := firstU.Username
+	s.On("DeleteUser", mockContext, username).Return(nil)
 	ctx, rec := setup(http.MethodDelete, nil)
 	ctx.SetParamNames("username")
-	ctx.SetParamValues(usrename)
+	ctx.SetParamValues(username)
 
 	// Act
-	handl := NewHandlerUser(s)
-	err := handl.DeleteU(ctx)
+	handle := NewHandlerUser(s)
+	err := handle.DeleteUser(ctx)
 
 	// Assert
 	require.NoError(t, err)
@@ -108,36 +109,36 @@ func TestDeleteU(t *testing.T) {
 	require.Equal(t, "", rec.Body.String())
 }
 
-func TestDeleteUNotFound(t *testing.T) {
+func TestDeleteUserNotFound(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
-	usrename := " "
-	s.On("DeleteU", mockContext, usrename).Return(repository.ErrNotFound)
+	username := " "
+	s.On("DeleteUser", mockContext, username).Return(repository.ErrNotFound)
 	ctx, _ := setup(http.MethodDelete, nil)
 	ctx.SetParamNames("username")
-	ctx.SetParamValues(usrename)
+	ctx.SetParamValues(username)
 
 	// Act
-	handl := NewHandlerUser(s)
-	err := handl.DeleteU(ctx)
+	handle := NewHandlerUser(s)
+	err := handle.DeleteUser(ctx)
 
 	// Assert
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusNotFound), err)
 }
 
-func TestDeleteURepositoryFailed(t *testing.T) {
+func TestDeleteUserRepositoryFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
-	usrename := " "
-	s.On("DeleteU", mockContext, usrename).Return(errSomeError)
+	username := " "
+	s.On("DeleteUser", mockContext, username).Return(errSomeError)
 	ctx, _ := setup(http.MethodDelete, nil)
 	ctx.SetParamNames("username")
-	ctx.SetParamValues(usrename)
+	ctx.SetParamValues(username)
 
 	// Act
-	handl := NewHandlerUser(s)
-	err := handl.DeleteU(ctx)
+	handle := NewHandlerUser(s)
+	err := handle.DeleteUser(ctx)
 
 	// Assert
 	require.Error(t, err)
@@ -148,14 +149,14 @@ func TestUpdateU(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
 	req := model.User{Username: "thirdUser", Password: "thirdUser", IsAdmin: false}
-	s.On("UpdateU", mockContext, req.Username, req.IsAdmin).Return(nil)
+	s.On("UpdateUser", mockContext, req.Username, req.IsAdmin).Return(nil)
 	ctx, rec := setup(http.MethodPut, &req)
 	ctx.SetParamNames("username")
 	ctx.SetParamValues(req.Username)
 
 	// Act
-	handl := NewHandlerUser(s)
-	err := handl.UpdateU(ctx)
+	handle := NewHandlerUser(s)
+	err := handle.UpdateUser(ctx)
 
 	// Assert
 	require.NoError(t, err)
@@ -163,36 +164,36 @@ func TestUpdateU(t *testing.T) {
 	require.Equal(t, "", rec.Body.String())
 }
 
-func TestUpdateUNotFound(t *testing.T) {
+func TestUpdateUserNotFound(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
 	req := model.User{Username: "thirdUser", Password: "thirdUser", IsAdmin: false}
-	s.On("UpdateU", mockContext, req.Username, req.IsAdmin).Return(repository.ErrNotFound)
+	s.On("UpdateUser", mockContext, req.Username, req.IsAdmin).Return(repository.ErrNotFound)
 	ctx, _ := setup(http.MethodPut, nil)
 	ctx.SetParamNames("username")
 	ctx.SetParamValues(req.Username)
 
 	// Act
-	handl := NewHandlerUser(s)
-	err := handl.UpdateU(ctx)
+	handle := NewHandlerUser(s)
+	err := handle.UpdateUser(ctx)
 
 	// Assert
 	require.Error(t, err)
 	require.Equal(t, echo.NewHTTPError(http.StatusNotFound), err)
 }
 
-func TestUpdateURepositoryFailed(t *testing.T) {
+func TestUpdateUserRepositoryFailed(t *testing.T) {
 	// Arrange
 	s := new(service.MockUsers)
 	req := model.User{Username: "thirdUser", Password: "thirdUser", IsAdmin: false}
-	s.On("UpdateU", mockContext, req.Username, req.IsAdmin).Return(errSomeError)
+	s.On("UpdateUser", mockContext, req.Username, req.IsAdmin).Return(errSomeError)
 	ctx, _ := setup(http.MethodPut, nil)
 	ctx.SetParamNames("username")
 	ctx.SetParamValues(req.Username)
 
 	// Act
-	handl := NewHandlerUser(s)
-	err := handl.UpdateU(ctx)
+	handle := NewHandlerUser(s)
+	err := handle.UpdateUser(ctx)
 
 	// Assert
 	require.Error(t, err)
