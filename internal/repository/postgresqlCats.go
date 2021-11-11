@@ -11,72 +11,63 @@ import (
 	model "myapp3.0/internal/model"
 )
 
-// Cats used for structuring, function for working with records
-type Cats interface {
-	InsertC(c context.Context, rec *model.Record) (uuid.UUID, error)
-	SelectC(c context.Context, id uuid.UUID) (*model.Record, error)
-	SelectAllC(c context.Context) ([]*model.Record, error)
-	UpdateC(c context.Context, rec *model.Record) error
-	DeleteC(c context.Context, id uuid.UUID) error
-}
+// InsertCat function for inserting item from a table
+func (repos *Postgres) InsertCat(c context.Context, cat *model.Cat) (uuid.UUID, error) {
 
-// InsertC function for inserting item from a table
-func (repos *Postgres) InsertC(c context.Context, rec *model.Record) (uuid.UUID, error) {
-	id := uuid.New()
 	row := repos.pool.QueryRow(c,
-		"INSERT INTO cats (_id, name, type) VALUES ($1, $2, $3) RETURNING _id", id, rec.Name, rec.Type)
+		"INSERT INTO cats (_id, name, type) VALUES ($1, $2, $3) RETURNING _id", cat.ID, cat.Name, cat.Type)
 
-	err := row.Scan(id)
+	err := row.Scan(&cat.ID)
 	if err != nil {
 		log.Errorf("Unable to INSERT: %v", err)
-		return id, err
+		return cat.ID, err
 	}
 
-	return id, err
+	return cat.ID, err
 }
 
-// SelectC function for selecting item from a table
-func (repos *Postgres) SelectC(c context.Context, id uuid.UUID) (*model.Record, error) {
-	var rec model.Record
+// SelectCat function for selecting item from a table
+func (repos *Postgres) SelectCat(c context.Context, id uuid.UUID) (*model.Cat, error) {
+	var cat model.Cat
 	row := repos.pool.QueryRow(c,
 		"SELECT _id, name, type FROM cats WHERE _id = $1", id)
 
-	err := row.Scan(&rec.ID, &rec.Name, &rec.Type)
+	err := row.Scan(&cat.ID, &cat.Name, &cat.Type)
 	if errors.Is(err, pgx.ErrNoRows) {
 		log.Errorf("Not found : %s\n", err)
-		return &rec, ErrNotFound
+		return &cat, ErrNotFound
 	} else if err != nil {
-		return &rec, err
+		return &cat, err
 	}
 
 	log.Printf("sec")
 
-	return &rec, err
+	return &cat, err
 }
 
-// SelectAllC function for selecting items from a table
-func (repos *Postgres) SelectAllC(c context.Context) ([]*model.Record, error) {
-	var rec []*model.Record
+// SelectAllCat function for selecting items from a table
+func (repos *Postgres) SelectAllCat(c context.Context) ([]*model.Cat, error) {
+	var cats []*model.Cat
 
 	row, err := repos.pool.Query(c,
 		"SELECT _id, name, type  FROM cats")
 
 	for row.Next() {
-		var rc model.Record
+		var rc model.Cat
 		err = row.Scan(&rc.ID, &rc.Name, &rc.Type)
 		if err == pgx.ErrNoRows {
-			return rec, err
+			return cats, err
 		}
-		rec = append(rec, &rc)
+		cats = append(cats, &rc)
 	}
 
-	return rec, err
+	return cats, err
 }
 
-// UpdateC function for updating item from a table
-func (repos *Postgres) UpdateC(c context.Context, rec *model.Record) error {
+// UpdateCat function for updating item from a table
+func (repos *Postgres) UpdateCat(c context.Context, cat *model.Cat) error {
 	_, err := repos.pool.Exec(c,
-		"UPDATE cats SET name = $2, type = $3 WHERE _id = $1", rec.ID, rec.Name, rec.Type)
+		"UPDATE cats SET name = $2, type = $3 WHERE _id = $1", cat.ID, cat.Name, cat.Type)
 
 	if err != nil {
 		log.Errorf("Failed updating data in db: %s\n", err)
@@ -86,8 +77,8 @@ func (repos *Postgres) UpdateC(c context.Context, rec *model.Record) error {
 	return nil
 }
 
-// DeleteC function for deleting item from a table
-func (repos *Postgres) DeleteC(c context.Context, id uuid.UUID) error {
+// DeleteCat function for deleting item from a table
+func (repos *Postgres) DeleteCat(c context.Context, id uuid.UUID) error {
 	_, err := repos.pool.Exec(c, "DELETE FROM cats WHERE _id = $1", id)
 
 	if err != nil {

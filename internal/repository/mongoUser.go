@@ -10,31 +10,31 @@ import (
 	model "myapp3.0/internal/model"
 )
 
-// InsertU function for inserting item from a table
-func (rep *Mongo) InsertU(c context.Context, rec *model.User) error {
-	_, err := rep.collectionU.InsertOne(c, rec)
+// InsertUser function for inserting item from a table
+func (rep *Mongo) InsertUser(c context.Context, user *model.User) error {
+	_, err := rep.collectionUsers.InsertOne(c, user)
 	if err != nil {
 		return err
 	}
 	return err
 }
 
-// SelectU function for selecting item from a table
-func (rep *Mongo) SelectU(c context.Context, username, password string) (*model.User, error) {
-	var rec model.User
-	err := rep.collectionU.FindOne(c, bson.M{"username": username, "password": password}).Decode(&rec)
+// SelectUser function for selecting item from a table
+func (rep *Mongo) SelectUser(c context.Context, username string) (*model.User, error) {
+	var user model.User
+	err := rep.collectionUsers.FindOne(c, bson.M{"username": username}).Decode(&user)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		log.Errorf("Not found : %s\n", err)
-		return &rec, err
+		return &user, err
 	} else if err != nil {
-		return &rec, err
+		return &user, err
 	}
-	return &rec, nil
+	return &user, nil
 }
 
-// SelectAllU function for selecting items from a table
-func (rep *Mongo) SelectAllU(c context.Context) ([]*model.User, error) {
-	cursor, err := rep.collectionU.Find(c, bson.M{})
+// SelectAllUser function for selecting items from a table
+func (rep *Mongo) SelectAllUser(c context.Context) ([]*model.User, error) {
+	cursor, err := rep.collectionUsers.Find(c, bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +55,9 @@ func (rep *Mongo) SelectAllU(c context.Context) ([]*model.User, error) {
 	return result, nil
 }
 
-// UpdateU function for updating item from a table
-func (rep *Mongo) UpdateU(c context.Context, username string, isAdmin bool) error {
-	if r, err := rep.collectionU.UpdateOne(c, bson.M{"username": username}, bson.M{"$set": bson.M{"is_admin": isAdmin}}); err != nil {
+// UpdateUser function for updating item from a table
+func (rep *Mongo) UpdateUser(c context.Context, username string, isAdmin bool) error {
+	if r, err := rep.collectionUsers.UpdateOne(c, bson.M{"username": username}, bson.M{"$set": bson.M{"is_admin": isAdmin}}); err != nil {
 		return err
 	} else if r.MatchedCount == 0 {
 		log.Errorf("Not found : %s\n", err)
@@ -66,9 +66,9 @@ func (rep *Mongo) UpdateU(c context.Context, username string, isAdmin bool) erro
 	return nil
 }
 
-// DeleteU function for deleting item from a table
-func (rep *Mongo) DeleteU(c context.Context, username string) error {
-	if r, err := rep.collectionU.DeleteOne(c, bson.M{"username": username}); err != nil {
+// DeleteUser function for deleting item from a table
+func (rep *Mongo) DeleteUser(c context.Context, username string) error {
+	if r, err := rep.collectionUsers.DeleteOne(c, bson.M{"username": username}); err != nil {
 		return err
 	} else if r.DeletedCount == 0 {
 		log.Errorf("Not found : %s\n", err)

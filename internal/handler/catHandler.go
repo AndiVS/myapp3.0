@@ -8,7 +8,6 @@ import (
 	"myapp3.0/internal/model"
 	"myapp3.0/internal/repository"
 	"myapp3.0/internal/service"
-
 	"net/http"
 )
 
@@ -22,16 +21,17 @@ func NewHandlerCat(Service service.Cats) *CatHandler {
 	return &CatHandler{Service: Service}
 }
 
-// AddC record about cat
-func (h *CatHandler) AddC(c echo.Context) error {
-	rec := new(model.Record)
+// AddCat record about cat
+func (h *CatHandler) AddCat(c echo.Context) error {
+	cat := new(model.Cat)
 
-	if err := c.Bind(rec); err != nil {
+	if err := c.Bind(cat); err != nil {
 		log.Errorf("Bind fail : %v\n", err)
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
+	cat.ID = uuid.New()
 
-	id, err := h.Service.AddC(c.Request().Context(), rec)
+	id, err := h.Service.AddCat(c.Request().Context(), cat)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -39,15 +39,15 @@ func (h *CatHandler) AddC(c echo.Context) error {
 	return c.JSON(http.StatusCreated, id)
 }
 
-// GetC provides cat
-func (h *CatHandler) GetC(c echo.Context) error {
+// GetCat provides cat
+func (h *CatHandler) GetCat(c echo.Context) error {
 	id := c.Param("_id")
 	_id, err1 := uuid.Parse(id)
 	if err1 != nil {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	r, err := h.Service.GetC(c.Request().Context(), _id)
+	r, err := h.Service.GetCat(c.Request().Context(), _id)
 	if err != nil {
 		if err.Error() == repository.ErrNotFound.Error() {
 			return echo.NewHTTPError(http.StatusNotFound)
@@ -58,29 +58,29 @@ func (h *CatHandler) GetC(c echo.Context) error {
 	return c.JSON(http.StatusOK, r)
 }
 
-// GetAllC provides all cats
-func (h *CatHandler) GetAllC(c echo.Context) error {
-	var rec []*model.Record
+// GetAllCat provides all cats
+func (h *CatHandler) GetAllCat(c echo.Context) error {
+	var cat []*model.Cat
 
-	rec, err := h.Service.GetAllC(c.Request().Context())
+	cat, err := h.Service.GetAllCat(c.Request().Context())
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, rec)
+	return c.JSON(http.StatusOK, cat)
 }
 
-// UpdateC updating record about cat
-func (h *CatHandler) UpdateC(c echo.Context) error {
-	rec := new(model.Record)
+// UpdateCat updating record about cat
+func (h *CatHandler) UpdateCat(c echo.Context) error {
+	cat := new(model.Cat)
 
-	if err := c.Bind(rec); err != nil {
+	if err := c.Bind(cat); err != nil {
 		log.Errorf("Bind fail : %v\n", err)
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err := h.Service.UpdateC(c.Request().Context(), rec)
+	err := h.Service.UpdateCat(c.Request().Context(), cat)
 	if err != nil {
 		if err.Error() == repository.ErrNotFound.Error() {
 			return echo.NewHTTPError(http.StatusNotFound)
@@ -91,15 +91,15 @@ func (h *CatHandler) UpdateC(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-// DeleteC record about cat
-func (h *CatHandler) DeleteC(c echo.Context) error {
+// DeleteCat record about cat
+func (h *CatHandler) DeleteCat(c echo.Context) error {
 	id := c.Param("_id")
 	_id, err1 := uuid.Parse(id)
 	if err1 != nil {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err := h.Service.DeleteC(c.Request().Context(), _id)
+	err := h.Service.DeleteCat(c.Request().Context(), _id)
 	if err != nil {
 		if err.Error() == repository.ErrNotFound.Error() {
 			return echo.NewHTTPError(http.StatusNotFound)

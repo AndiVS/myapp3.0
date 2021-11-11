@@ -8,12 +8,14 @@ import (
 
 // Config struct to config env
 type Config struct {
-	Port          string `env:"PORT" envDefault:":8080" json:"port,omitempty"`
-	Host          string `env:"HOST" envDefault:"localhost" json:"host,omitempty"`
+	Port          string `env:"PORT" envDefault:":8081" json:"port,omitempty"`
+	Host          string `env:"HOST" envDefault:"postgres" json:"host,omitempty"`
 	LogLevel      string `env:"LOGLEVEL" envDefault:"debug" json:"loglevel,omitempty"`
-	DBURLPOSTGRES string `env:"DBURLPOSTGRES" envDefault:"postgres://andeisaldyun:e3cr3t@localhost:5432/catsDB" json:"dburlpostgres,omitempty"`
+	DBURLPOSTGRES string `env:"DBURLPOSTGRES" envDefault:"postgres://andeisaldyun:e3cr3t@postgres:5432/catsDB" json:"dburlpostgres,omitempty"`
 	DBURLMONGO    string `env:"DBURLMONGO" envDefault:"mongodb://andeisaldyun:e3cr3t@172.18.0.2:27017" json:"dburlmongo,omitempty"`
 	DBURL         string `env:"DBURL" envDefault:"" json:"dburl,omitempty"`
+
+	Server string `env:"SERVER" envDefault:"echo" json:"server"`
 
 	System     string `env:"SYSTEM" envDefault:"postgres"`
 	DBUser     string `env:"DB_USER" envDefault:"andeisaldyun"`

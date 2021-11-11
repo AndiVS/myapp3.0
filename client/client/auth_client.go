@@ -1,0 +1,41 @@
+package client
+
+import (
+	"context"
+	"myapp3.0/protocol"
+	"time"
+
+	"google.golang.org/grpc"
+)
+
+// AuthClient is a client to call authentication RPC
+type AuthClient struct {
+	service  protocol.AuthServiceClient
+	username string
+	password string
+}
+
+// NewAuthClient returns a new auth client
+func NewAuthClient(cc *grpc.ClientConn, username string, password string) *AuthClient {
+	service := protocol.NewAuthServiceClient(cc)
+	return &AuthClient{service, username, password}
+}
+
+// SignIn login user and returns the access token
+func (client *AuthClient) SignIn() (string, string, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
+	defer cancel()
+
+	req := &protocol.SignInRequest{
+		Username: client.username,
+		Password: client.password,
+	}
+
+	res, err := client.service.SignIn(ctx, req)
+	if err != nil {
+		return "", "", err
+	}
+
+	return res.GetAccessToken(), res.GetRefreshToken(), nil
+}

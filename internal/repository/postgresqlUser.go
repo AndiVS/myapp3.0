@@ -8,21 +8,12 @@ import (
 	model "myapp3.0/internal/model"
 )
 
-// Users used for structuring, function for working with users
-type Users interface {
-	InsertU(c context.Context, rec *model.User) error
-	SelectU(c context.Context, username, password string) (*model.User, error)
-	SelectAllU(c context.Context) ([]*model.User, error)
-	UpdateU(c context.Context, username string, isAdmin bool) error
-	DeleteU(c context.Context, username string) error
-}
-
-// InsertU function for inserting item from a table
-func (repos *Postgres) InsertU(c context.Context, rec *model.User) error {
+// InsertUser function for inserting item from a table
+func (repos *Postgres) InsertUser(c context.Context, user *model.User) error {
 	row := repos.pool.QueryRow(c,
-		"INSERT INTO users (username, password, is_admin) VALUES ($1, $2, $3) RETURNING username", rec.Username, rec.Password, false)
+		"INSERT INTO users (username, password, is_admin) VALUES ($1, $2, $3) RETURNING username", user.Username, user.Password, false)
 
-	err := row.Scan(&rec.Username)
+	err := row.Scan(&user.Username)
 	if err != nil {
 		log.Errorf("Unable to INSERT: %v", err)
 		return err
@@ -31,44 +22,44 @@ func (repos *Postgres) InsertU(c context.Context, rec *model.User) error {
 	return err
 }
 
-// SelectU function for selecting item from a table
-func (repos *Postgres) SelectU(c context.Context, username, password string) (*model.User, error) {
-	var rc model.User
+// SelectUser function for selecting item from a table
+func (repos *Postgres) SelectUser(c context.Context, username string) (*model.User, error) {
+	var user model.User
 	row := repos.pool.QueryRow(c,
-		"SELECT username, password, is_admin  FROM users WHERE username = $1 AND password = $2", username, password)
+		"SELECT username, password, is_admin  FROM users WHERE username = $1", username)
 
-	err := row.Scan(&rc.Username, &rc.Password, &rc.IsAdmin)
+	err := row.Scan(&user.Username, &user.Password, &user.IsAdmin)
 	if err != nil {
 		log.Errorf("Unable to SELECT: %v", err)
-		return &rc, err
+		return &user, err
 	}
 
 	log.Printf("sec")
 
-	return &rc, err
+	return &user, err
 }
 
-// SelectAllU function for selecting items from a table
-func (repos *Postgres) SelectAllU(c context.Context) ([]*model.User, error) {
-	var rec []*model.User
+// SelectAllUser function for selecting items from a table
+func (repos *Postgres) SelectAllUser(c context.Context) ([]*model.User, error) {
+	var user []*model.User
 
 	row, err := repos.pool.Query(c,
 		"SELECT username, password, is_admin  FROM users")
 
 	for row.Next() {
-		var rc model.User
-		err = row.Scan(&rc.Username, &rc.Password, &rc.IsAdmin)
+		var us model.User
+		err = row.Scan(&us.Username, &us.Password, &us.IsAdmin)
 		if err == pgx.ErrNoRows {
-			return rec, err
+			return user, err
 		}
-		rec = append(rec, &rc)
+		user = append(user, &us)
 	}
 
-	return rec, err
+	return user, err
 }
 
-// UpdateU function for updating item from a table
-func (repos *Postgres) UpdateU(c context.Context, username string, isAdmin bool) error {
+// UpdateUser function for updating item from a table
+func (repos *Postgres) UpdateUser(c context.Context, username string, isAdmin bool) error {
 	_, err := repos.pool.Exec(c,
 		"UPDATE users SET is_admin = $2 WHERE username = $1", username, isAdmin)
 	if err != nil {
@@ -79,8 +70,8 @@ func (repos *Postgres) UpdateU(c context.Context, username string, isAdmin bool)
 	return nil
 }
 
-// DeleteU function for deleting item from a table
-func (repos *Postgres) DeleteU(c context.Context, username string) error {
+// DeleteUser function for deleting item from a table
+func (repos *Postgres) DeleteUser(c context.Context, username string) error {
 	ct, err := repos.pool.Exec(c, "DELETE FROM users WHERE username = $1", username)
 
 	if err != nil {
