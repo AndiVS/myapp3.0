@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+option go_package = "./protocol";
+package proto;
+
+message User {
+  string username  = 1;
+  string password = 2;
+  bool   is_admin = 3;
+}
+
+message Cat {
+  string id = 1;
+  string name  = 2;
+  string type = 3;
+}
+
+service UserService {
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+  };
+  rpc GetAllUser(GetAllUserRequest) returns (GetAllUserResponse) {
+  };
+  rpc SearchUser(SearchUserRequest) returns (SearchUserResponse) {
+  };
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
+  };
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+  };
+}
+
+message CreateUserRequest { User user = 1;  }
+
+message CreateUserResponse { string Err = 1; }
+
+message SearchUserRequest { string username = 1;}
+
+message SearchUserResponse { User user = 1; }
+
+message GetAllUserRequest { string username = 1; }
+
+message GetAllUserResponse { repeated User user = 1; }
+
+message UpdateUserRequest { User user = 1; }
+
+message UpdateUserResponse { string  err = 1; }
+
+message DeleteUserRequest { string  username = 1; }
+
+message DeleteUserResponse { string  err = 1; }
+
+
+service CatService {
+  rpc CreateCat(CreateCatRequest) returns (CreateCatResponse) {
+  };
+  rpc SearchCat(SearchCatRequest) returns (SearchCatResponse) {
+  };
+  rpc GetAllCat(GetAllCatRequest) returns (GetAllCatResponse) {
+  };
+  rpc UpdateCat(UpdateCatRequest) returns (UpdateCatResponse) {
+  };
+  rpc DeleteCat(DeleteCatRequest) returns (DeleteCatResponse) {
+  };
+}
+
+message CreateCatRequest { Cat cat = 1; }
+
+message CreateCatResponse { string id = 1; }
+
+message SearchCatRequest { string id = 1; }
+
+message SearchCatResponse { Cat cat = 1; }
+
+message GetAllCatRequest { string id = 1; }
+
+message GetAllCatResponse { repeated Cat cats = 1; }
+
+message UpdateCatRequest { Cat cat = 1; }
+
+message UpdateCatResponse { string  err = 1; }
+
+message DeleteCatRequest { string  id = 1; }
+
+message DeleteCatResponse { string  err = 1; }
+

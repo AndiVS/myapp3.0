@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"myapp3.0/internal/config"
 	"myapp3.0/internal/handler"
+	"myapp3.0/internal/middlewares"
 	"myapp3.0/internal/model"
 	"myapp3.0/internal/repository"
 	"myapp3.0/internal/server"
@@ -188,44 +189,37 @@ func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandl
 	}))
 	e.Use(middleware.Recover())
 
-	e.POST("/records", catHandler.AddCat)
-	e.GET("/records/:_id", catHandler.GetCat)
-	e.GET("/records", catHandler.GetAllCat)
-	e.PUT("/records/:_id", catHandler.UpdateCat)
-	e.DELETE("/records/:_id", catHandler.DeleteCat)
+	e.POST("/auth/sign-up", authenticationHandler.SignUp)
+	e.POST("/auth/sign-in", authenticationHandler.SignIn)
+	admin := e.Group("/admin")
 
-	/*
-		e.POST("/auth/sign-up", authenticationHandler.SignUp)
-		e.POST("/auth/sign-in", authenticationHandler.SignIn)
-		admin := e.Group("/admin")
-		configuration := middleware.JWTConfig{
-			Claims:     &model.Claims{},
-			SigningKey: cfg.AuthenticationKey,
-		}
+	configuration := middleware.JWTConfig{
+		Claims:     &model.Claims{},
+		SigningKey: cfg.AuthenticationKey,
+	}
+	access := service.NewJWTManager([]byte(cfg.AuthenticationKey), time.Duration(cfg.AuthenticationTokenDuration)*time.Second)
+	refresh := service.NewJWTManager([]byte(cfg.RefreshKey), time.Duration(cfg.RefreshTokenDuration)*time.Second)
+	admin.Use(middleware.JWTWithConfig(configuration))
+	admin.Use(middlewares.Check)
+	admin.Use(middlewares.TokenRefresherMiddleware(access, refresh))
 
-		access :=  service.NewJWTManager([]byte(cfg.AuthenticationKey), time.Duration(cfg.AuthenticationTokenDuration)*time.Second)
-		refresh :=  service.NewJWTManager([]byte(cfg.RefreshKey), time.Duration(cfg.RefreshTokenDuration)*time.Second)
-		admin.Use(middleware.JWTWithConfig(configuration))
-		admin.Use(middlewares.Check)
-		admin.Use(middlewares.TokenRefresherMiddleware(access,refresh))
+	admin.POST("/records", catHandler.AddCat)
+	admin.GET("/records/:_id", catHandler.GetCat)
+	admin.GET("/records", catHandler.GetAllCat)
+	admin.PUT("/records/:_id", catHandler.UpdateCat)
+	admin.DELETE("/records/:_id", catHandler.DeleteCat)
 
-		admin.POST("/records", catHandler.AddCat)
-		admin.GET("/records/:_id", catHandler.GetCat)
-		admin.GET("/records", catHandler.GetAllCat)
-		admin.PUT("/records/:_id", catHandler.UpdateCat)
-		admin.DELETE("/records/:_id", catHandler.DeleteCat)
+	admin.GET("/user", userHandler.GetAllUser)
+	admin.PUT("/user/:username", userHandler.UpdateUser)
+	admin.DELETE("/user/:username", userHandler.DeleteUser)
 
-		admin.GET("/user", userHandler.GetAllUser)
-		admin.PUT("/user/:username", userHandler.UpdateUser)
-		admin.DELETE("/user/:username", userHandler.DeleteUser)
+	user := e.Group("/user")
 
-		user := e.Group("/user")
+	user.Use(middleware.JWTWithConfig(configuration))
+	//user.Use(middlewares.TokenRefresherMiddleware(authenticationHandler.Service.Access,authenticationHandler.Service.Refresh))
 
-		user.Use(middleware.JWTWithConfig(configuration))
-		//user.Use(middlewares.TokenRefresherMiddleware(authenticationHandler.Service.Access,authenticationHandler.Service.Refresh))
-
-		user.GET("/records/:_id", catHandler.GetCat)
-		user.GET("/records", catHandler.GetAllCat)*/
+	user.GET("/records", catHandler.GetAllCat)
+	user.GET("/records/:_id", catHandler.GetCat)
 
 	return e
 }
