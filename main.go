@@ -240,3 +240,5 @@ func runRedis() *model.Redis {
 
 	return redisStruct
 }
+
+//test for key
