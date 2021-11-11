@@ -1,11 +1,10 @@
-package docker_test
+package main_test
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/google/uuid"
@@ -20,6 +19,8 @@ import (
 	"myapp3.0/internal/repository"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
+
 	"os"
 	"strings"
 	"testing"
@@ -40,8 +41,8 @@ func TestMain(m *testing.M) {
 		Repository: "postgres",
 		Tag:        "11",
 		Env: []string{
-			"POSTGRES_PASSWORD=secret",
-			"POSTGRES_USER=user_name",
+			"POSTGRES_PASSWORD=e3cr3t",
+			"POSTGRES_USER=user",
 			"POSTGRES_DB=dbname",
 			"listen_addresses = '*'",
 		},
@@ -55,16 +56,16 @@ func TestMain(m *testing.M) {
 	}
 
 	hostAndPort := resource.GetHostPort("5432/tcp")
-	databaseUrl := fmt.Sprintf("postgres://user_name:secret@%s/dbname?sslmode=disable", hostAndPort)
+	databaseURL := fmt.Sprintf("postgres://user:e3cr3t@%s/dbname?sslmode=disable", hostAndPort)
 
-	log.Println("Connecting to database on url: ", databaseUrl)
+	log.Println("Connecting to database on url: ", databaseURL)
 
 	resource.Expire(120) // Tell docker to hard kill the container in 120 seconds
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	pool.MaxWait = 120 * time.Second
 	if err = pool.Retry(func() error {
-		poll, err = pgxpool.Connect(context.Background(), databaseUrl)
+		poll, err = pgxpool.Connect(context.Background(), databaseURL)
 		if err != nil {
 			return err
 		}
@@ -73,22 +74,34 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	migr, err := migrate.New(
-		"file://migrations",
-		databaseUrl)
+	/*	_, err = pool.RunWithOptions(&dockertest.RunOptions{
+			Repository: "flyway/flyway",
+			Tag:        "6.3.1",
+			Cmd: []string{
+				"-url=jdbc:postgresql://" + hostAndPort + "/dbname",
+				"-user=user",
+				"-password=e3cr3t",
+				"migrate",
+			},
+		}, func(config *docker.HostConfig) {
+			// set AutoRemove to true so that stopped container goes away by itself
+			config.AutoRemove = true
+			config.RestartPolicy = docker.RestartPolicy{Name: "no"}
+		})
+		if err != nil {
+			log.Fatalf("Could not start resource: %s", err)
+		}*/
+
+	cmd := exec.Command("./flyway", "-url=jdbc:postgresql://"+hostAndPort+"/dbname", "-user=user", "-password=e3cr3t", "migrate")
+
+	cmd.Dir = "/home/andeisaldyun/flyway-8.0.2"
+	err = cmd.Run()
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := migr.Up(); err != nil {
-		log.Fatal(err)
-	}
 
-	//Run tests
 	code := m.Run()
-
-	if err := migr.Down(); err != nil {
-		log.Fatal(err)
-	}
 
 	// You can't defer this because os.Exit doesn't care for defer
 	if err := pool.Purge(resource); err != nil {
@@ -99,17 +112,17 @@ func TestMain(m *testing.M) {
 }
 
 var (
-	firstC = model.Record{
+	firstC = model.Cat{
 		ID:   uuid.New(),
 		Name: "firstCat",
 		Type: "firstType",
 	}
-	secondC = model.Record{
+	secondC = model.Cat{
 		ID:   uuid.New(),
 		Name: "secondCat",
 		Type: "secondType",
 	}
-	cats = []*model.Record{&firstC, &secondC}
+	cats = []*model.Cat{&firstC, &secondC}
 
 	firstU = model.User{
 		Username: "firstUser",
@@ -127,45 +140,44 @@ var (
 func TestPostgresRepository(t *testing.T) {
 	rep := repository.NewRepository(poll)
 
-	//InsertC
+	// InsertC
 	ctx, _ := setup(http.MethodPost, &firstC)
-	id, err := rep.InsertC(ctx.Request().Context(), &firstC)
+	id, err := rep.InsertCat(ctx.Request().Context(), &firstC)
 	require.NoError(t, err)
 	firstC.ID = id
 
 	ctx, _ = setup(http.MethodPost, &secondC)
-	id, err = rep.InsertC(ctx.Request().Context(), &secondC)
+	id, err = rep.InsertCat(ctx.Request().Context(), &secondC)
 	require.NoError(t, err)
 	secondC.ID = id
 
-	//SelectAllC
-	resa, err := rep.SelectAllC(ctx.Request().Context())
+	// SelectAllC
+	resa, err := rep.SelectAllCat(ctx.Request().Context())
 	require.NoError(t, err)
 	require.Equal(t, cats[0].ID, resa[0].ID)
 	require.Equal(t, cats[1].ID, resa[1].ID)
 
-	//SelectC
-	res, err := rep.SelectC(ctx.Request().Context(), firstC.ID)
+	// SelectC
+	res, err := rep.SelectCat(ctx.Request().Context(), firstC.ID)
 	require.NoError(t, err)
 	require.Equal(t, firstC.ID, res.ID)
 	require.Equal(t, firstC.Name, res.Name)
 
-	//UpdateC
-	thirdC := model.Record{ID: firstC.ID, Name: "thirdCat", Type: "thirdType"}
+	// UpdateC
+	thirdC := model.Cat{ID: firstC.ID, Name: "thirdCat", Type: "thirdType"}
 	ctx, _ = setup(http.MethodPost, thirdC)
-	err = rep.UpdateC(ctx.Request().Context(), &thirdC)
+	err = rep.UpdateCat(ctx.Request().Context(), &thirdC)
 	require.NoError(t, err)
-	res, err = rep.SelectC(ctx.Request().Context(), firstC.ID)
+	res, err = rep.SelectCat(ctx.Request().Context(), firstC.ID)
 	require.NoError(t, err)
 	require.Equal(t, firstC.ID, res.ID)
 	require.Equal(t, thirdC.Name, res.Name)
 
-	//DeleteC
-	err = rep.DeleteC(ctx.Request().Context(), firstC.ID)
+	// DeleteC
+	err = rep.DeleteCat(ctx.Request().Context(), firstC.ID)
 	require.NoError(t, err)
-	res, err = rep.SelectC(ctx.Request().Context(), firstC.ID)
+	_, err = rep.SelectCat(ctx.Request().Context(), firstC.ID)
 	require.Error(t, err)
-
 }
 
 func setup(method string, body interface{}) (echo.Context, *httptest.ResponseRecorder) {

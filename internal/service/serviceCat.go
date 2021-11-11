@@ -3,6 +3,8 @@ package service
 
 import (
 	"context"
+	"myapp3.0/internal/redis/consumer"
+	"myapp3.0/internal/redis/producer"
 
 	"github.com/google/uuid"
 	"myapp3.0/internal/model"
@@ -13,53 +15,80 @@ import (
 
 // Cats interface for mocks
 type Cats interface {
-	AddC(c context.Context, rec *model.Record) (uuid.UUID, error)
-	GetC(c context.Context, id uuid.UUID) (*model.Record, error)
-	GetAllC(c context.Context) ([]*model.Record, error)
-	UpdateC(c context.Context, rec *model.Record) error
-	DeleteC(c context.Context, id uuid.UUID) error
+	AddCat(c context.Context, rec *model.Cat) (uuid.UUID, error)
+	GetCat(c context.Context, id uuid.UUID) (*model.Cat, error)
+	GetAllCat(c context.Context) ([]*model.Cat, error)
+	UpdateCat(c context.Context, rec *model.Cat) error
+	DeleteCat(c context.Context, id uuid.UUID) error
 }
 
-// Service struct for rep
-type Service struct {
-	Rep repository.Cats
+// ServiceCat struct for rep
+type ServiceCat struct {
+	Rep    repository.Cats
+	CatMap map[string]*model.Cat
+	Redis  *model.Redis
 }
 
-// NewService used for setting services
-func NewService(Rep interface{}) Cats {
+// NewServiceCat used for setting services
+func NewServiceCat(Rep interface{}, Redis *model.Redis) Cats {
+	serviceCat := ServiceCat{}
+
 	var mongo *repository.Mongo
 	var postgres *repository.Postgres
 
 	switch reflect.TypeOf(Rep) {
 	case reflect.TypeOf(mongo):
-		return &Service{Rep: Rep.(*repository.Mongo)}
+		serviceCat.Rep = Rep.(*repository.Mongo)
 	case reflect.TypeOf(postgres):
-		return &Service{Rep: Rep.(*repository.Postgres)}
+		serviceCat.Rep = Rep.(*repository.Postgres)
 	}
-	return nil
+
+	catMap := make(map[string]*model.Cat)
+	catsSlice, _ := serviceCat.Rep.SelectAllCat(context.Background())
+	for _, cat := range catsSlice {
+		catMap[cat.ID.String()] = cat
+	}
+	serviceCat.CatMap = catMap
+
+	go consumer.ConsumeEvents(Redis, catMap)
+
+	serviceCat.Redis = Redis
+
+	return &serviceCat
 }
 
-// AddC record about cat
-func (serv *Service) AddC(c context.Context, rec *model.Record) (uuid.UUID, error) {
-	return serv.Rep.InsertC(c, rec)
+// AddCat record about cat
+func (s *ServiceCat) AddCat(c context.Context, cat *model.Cat) (uuid.UUID, error) {
+	s.CatMap[cat.ID.String()] = cat
+	producer.GenerateEvent("cat", "Insert", cat, s.Redis.Client, s.Redis.StreamName)
+	return s.Rep.InsertCat(c, cat)
 }
 
-// GetC provides cat
-func (serv *Service) GetC(c context.Context, id uuid.UUID) (*model.Record, error) {
-	return serv.Rep.SelectC(c, id)
+// GetCat provides cat
+func (s *ServiceCat) GetCat(c context.Context, id uuid.UUID) (*model.Cat, error) {
+	val, ok := s.CatMap[id.String()]
+	if ok {
+		return val, nil
+	} else {
+		return s.Rep.SelectCat(c, id)
+	}
 }
 
-// GetAllC provides all cats
-func (serv *Service) GetAllC(c context.Context) ([]*model.Record, error) {
-	return serv.Rep.SelectAllC(c)
+// GetAllCat provides all cats
+func (s *ServiceCat) GetAllCat(c context.Context) ([]*model.Cat, error) {
+	return s.Rep.SelectAllCat(c)
 }
 
-// UpdateC updating record about cat
-func (serv *Service) UpdateC(c context.Context, rec *model.Record) error {
-	return serv.Rep.UpdateC(c, rec)
+// UpdateCat updating record about cat
+func (s *ServiceCat) UpdateCat(c context.Context, cat *model.Cat) error {
+	s.CatMap[cat.ID.String()] = cat
+	producer.GenerateEvent("cat", "Update", cat, s.Redis.Client, s.Redis.StreamName)
+	return s.Rep.UpdateCat(c, cat)
 }
 
-// DeleteC record about cat
-func (serv *Service) DeleteC(c context.Context, id uuid.UUID) error {
-	return serv.Rep.DeleteC(c, id)
+// DeleteCat record about cat
+func (s *ServiceCat) DeleteCat(c context.Context, id uuid.UUID) error {
+	delete(s.CatMap, id.String())
+	producer.GenerateEvent("cat", "Delete", model.Cat{ID: id}, s.Redis.Client, s.Redis.StreamName)
+	return s.Rep.DeleteCat(c, id)
 }

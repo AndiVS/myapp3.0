@@ -3,31 +3,36 @@ package main
 import (
 	"context"
 	"fmt"
-
+	"github.com/go-redis/redis/v7"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/grpc"
 	"myapp3.0/internal/config"
 	"myapp3.0/internal/handler"
-	"myapp3.0/internal/middlewar"
 	"myapp3.0/internal/model"
 	"myapp3.0/internal/repository"
+	"myapp3.0/internal/server"
 	"myapp3.0/internal/service"
-
+	"myapp3.0/protocol"
+	"net"
+	"os"
 	"time"
 )
 
 const mongodatabase = "mongodb"
 const postgresdatabase = "postgres"
+const secho = "echo"
+const sgrpc = "grpc"
+const rediska = "redis"
+const kafka = "kafka"
+const rabit = "rabit"
 
 func main() {
-	customFormatter := new(log.TextFormatter)
-	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
-	customFormatter.FullTimestamp = true
-	log.SetFormatter(customFormatter)
+	setLog()
 
 	cfg := config.Config{}
 	config.New(&cfg)
@@ -40,6 +45,9 @@ func main() {
 
 	cfg.DBURL = getURL(&cfg)
 	log.Infof("Using DB URL: %s", cfg.DBURL)
+
+	access := service.NewJWTManager([]byte(cfg.AuthenticationKey), time.Duration(cfg.AuthenticationTokenDuration)*time.Second)
+	refresh := service.NewJWTManager([]byte(cfg.RefreshKey), time.Duration(cfg.RefreshTokenDuration)*time.Second)
 
 	var recordRepository repository.Cats
 	switch cfg.System {
@@ -60,68 +68,64 @@ func main() {
 
 	log.Infof("Starting HTTP server at %s...", cfg.Port)
 
-	recordService := service.NewService(recordRepository)
-	recordHandler := handler.NewHandlerCat(recordService)
+	cons := new(model.Redis)
+	switch rediska {
+	case rediska:
+		cons = runRedis()
+	case kafka:
 
-	userService := service.NewAuthorizer(
-		recordRepository,
-		cfg.HashSalt,
-		[]byte(cfg.AuthenticationKey),
-		[]byte(cfg.RefreshKey),
-		time.Duration(cfg.AuthenticationTokenDuration)*time.Second,
-		time.Duration(cfg.RefreshTokenDuration)*time.Second,
-	)
-	userHandler := handler.NewHandlerUser(userService)
+	case rabit:
 
-	e := echo.New()
-	initHandlers(recordHandler, userHandler, e, &cfg)
-	err = e.Start(cfg.Port)
-	if err != nil {
-		log.Error("Start server error")
 	}
 
-	log.Info("HTTP server terminated")
+	recordService := service.NewServiceCat(recordRepository, cons)
+	userService := service.NewServiceUser(recordRepository)
+	authenticationService := service.NewServiceAuthentication(recordRepository, access, refresh, cfg.HashSalt)
+
+	switch cfg.Server {
+	case secho:
+		catHandler := handler.NewHandlerCat(recordService)
+		userHandler := handler.NewHandlerUser(userService)
+		authenticationHandler := handler.NewHandlerAuthentication(authenticationService)
+		err = runEchoServer(catHandler, userHandler, authenticationHandler, &cfg)
+	case sgrpc:
+		catServer := server.NewCatServer(recordService)
+		userServer := server.NewUserServer(userService)
+		authenticationServer := server.NewAuthenticationServer(authenticationService)
+		err = runGRPCServer(catServer, userServer, authenticationServer, &cfg, access, refresh)
+	}
+
+	log.Info("HTTP server terminated", err)
 }
 
-func initHandlers(recordHandler *handler.CatHandler, userHandler *handler.UserHandler, e *echo.Echo, cfg *config.Config) *echo.Echo {
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		CustomTimeFormat: "2006-01-02 15:04:05",
-	}))
-	e.Use(middleware.Recover())
+func setLog() {
+	customFormatter := new(log.TextFormatter)
+	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
+	customFormatter.FullTimestamp = true
+	log.SetFormatter(customFormatter)
+}
 
-	e.POST("/auth/sign-up", userHandler.AddU)
-	e.POST("/auth/sign-in", userHandler.SignIn)
-
-	admin := e.Group("/admin")
-	configuration := middleware.JWTConfig{
-		Claims:     &model.Claims{},
-		SigningKey: []byte(cfg.AuthenticationKey),
+func getURL(cfg *config.Config) (URL string) {
+	var str string
+	switch cfg.System {
+	case mongodatabase:
+		str = fmt.Sprintf("%s://%s:%d",
+			cfg.System,
+			cfg.DBHost,
+			cfg.DBPort,
+		)
+	case postgresdatabase:
+		str = fmt.Sprintf("%s://%s:%s@%s:%d/%s",
+			cfg.System,
+			cfg.DBUser,
+			// os.Getenv("DB_PASSWORD"),
+			cfg.DBPassword,
+			cfg.DBHost,
+			cfg.DBPort,
+			cfg.DBName,
+		)
 	}
-
-	admin.Use(middleware.JWTWithConfig(configuration))
-	admin.Use(middlewar.Check)
-	admin.Use(userHandler.Service.TokenRefresherMiddleware)
-
-	admin.POST("/records", recordHandler.AddC)
-	admin.GET("/records/:_id", recordHandler.GetC)
-	admin.GET("/records", recordHandler.GetAllC)
-	admin.PUT("/records/:_id", recordHandler.UpdateC)
-	admin.DELETE("/records/:_id", recordHandler.DeleteC)
-
-	admin.POST("/user", userHandler.AddU)
-	admin.GET("/user", userHandler.GetAllU)
-	admin.PUT("/user/:username", userHandler.UpdateU)
-	admin.DELETE("/user/:username", userHandler.DeleteU)
-
-	user := e.Group("/user")
-
-	user.Use(middleware.JWTWithConfig(configuration))
-	user.Use(userHandler.Service.TokenRefresherMiddleware)
-
-	user.GET("/records/:_id", recordHandler.GetC)
-	user.GET("/records", recordHandler.GetAllC)
-
-	return e
+	return str
 }
 
 func getPostgres(url string) *pgxpool.Pool {
@@ -142,24 +146,103 @@ func getMongo(url, dbname string) (*mongo.Client, *mongo.Database) {
 	return mongoClient, db
 }
 
-func getURL(cfg *config.Config) (URL string) {
-	var str string
-	switch cfg.System {
-	case mongodatabase:
-		str = fmt.Sprintf("%s://%s:%d",
-			cfg.System,
-			cfg.DBHost,
-			cfg.DBPort,
-		)
-	case postgresdatabase:
-		str = fmt.Sprintf("%s://%s:%s@%s:%d/%s",
-			cfg.System,
-			cfg.DBUser,
-			cfg.DBPassword,
-			cfg.DBHost,
-			cfg.DBPort,
-			cfg.DBName,
-		)
+func runGRPCServer(recServer protocol.CatServiceServer, userServer protocol.UserServiceServer, serviceServer protocol.AuthServiceServer, cfg *config.Config, access, refresh *service.JWTManager) error {
+
+	listener, err := net.Listen("tcp", cfg.Port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
 	}
-	return str
+
+	interceptor := server.NewAuthInterceptor(access, refresh, nil)
+	serverOptions := []grpc.ServerOption{
+		grpc.UnaryInterceptor(interceptor.Unary()),
+		grpc.StreamInterceptor(interceptor.Stream()),
+	}
+
+	grpcServer := grpc.NewServer(serverOptions...)
+	//grpcServer := grpc.NewServer()
+	protocol.RegisterUserServiceServer(grpcServer, userServer)
+	protocol.RegisterCatServiceServer(grpcServer, recServer)
+	protocol.RegisterAuthServiceServer(grpcServer, serviceServer)
+	log.Printf("server listening at %v", listener.Addr())
+	if err := grpcServer.Serve(listener); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+
+	return grpcServer.Serve(listener)
+}
+
+func runEchoServer(catHandler *handler.CatHandler, userHandler *handler.UserHandler, authenticationHandler *handler.AuthenticationHandler, cfg *config.Config) error {
+	e := echo.New()
+	initHandlers(catHandler, userHandler, authenticationHandler, e, cfg)
+	err := e.Start(cfg.Port)
+	if err != nil {
+		log.Error("Start server error")
+	}
+	return err
+}
+
+func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandler, authenticationHandler *handler.AuthenticationHandler, e *echo.Echo, cfg *config.Config) *echo.Echo {
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		CustomTimeFormat: "2006-01-02 15:04:05",
+	}))
+	e.Use(middleware.Recover())
+
+	e.POST("/records", catHandler.AddCat)
+	e.GET("/records/:_id", catHandler.GetCat)
+	e.GET("/records", catHandler.GetAllCat)
+	e.PUT("/records/:_id", catHandler.UpdateCat)
+	e.DELETE("/records/:_id", catHandler.DeleteCat)
+
+	/*
+		e.POST("/auth/sign-up", authenticationHandler.SignUp)
+		e.POST("/auth/sign-in", authenticationHandler.SignIn)
+		admin := e.Group("/admin")
+		configuration := middleware.JWTConfig{
+			Claims:     &model.Claims{},
+			SigningKey: cfg.AuthenticationKey,
+		}
+
+		access :=  service.NewJWTManager([]byte(cfg.AuthenticationKey), time.Duration(cfg.AuthenticationTokenDuration)*time.Second)
+		refresh :=  service.NewJWTManager([]byte(cfg.RefreshKey), time.Duration(cfg.RefreshTokenDuration)*time.Second)
+		admin.Use(middleware.JWTWithConfig(configuration))
+		admin.Use(middlewares.Check)
+		admin.Use(middlewares.TokenRefresherMiddleware(access,refresh))
+
+		admin.POST("/records", catHandler.AddCat)
+		admin.GET("/records/:_id", catHandler.GetCat)
+		admin.GET("/records", catHandler.GetAllCat)
+		admin.PUT("/records/:_id", catHandler.UpdateCat)
+		admin.DELETE("/records/:_id", catHandler.DeleteCat)
+
+		admin.GET("/user", userHandler.GetAllUser)
+		admin.PUT("/user/:username", userHandler.UpdateUser)
+		admin.DELETE("/user/:username", userHandler.DeleteUser)
+
+		user := e.Group("/user")
+
+		user.Use(middleware.JWTWithConfig(configuration))
+		//user.Use(middlewares.TokenRefresherMiddleware(authenticationHandler.Service.Access,authenticationHandler.Service.Refresh))
+
+		user.GET("/records/:_id", catHandler.GetCat)
+		user.GET("/records", catHandler.GetAllCat)*/
+
+	return e
+}
+
+func runRedis() *model.Redis {
+	adr := fmt.Sprintf("%s:6379", os.Getenv("REDIS_HOST"))
+	client := redis.NewClient(&redis.Options{
+		Addr:     "172.28.1.4:6379",
+		Password: "",
+		DB:       0, // use default DB
+	})
+	_, err := client.Ping().Result()
+	if err != nil {
+		log.Errorf("ping %v__ error __ %v", adr, err)
+	}
+
+	redisStruct := model.NewRedisClient(client, "STREAM")
+
+	return redisStruct
 }

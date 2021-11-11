@@ -11,8 +11,8 @@ type MockUsers struct {
 	mock.Mock
 }
 
-// DeleteU provides a mock function with given fields: c, username
-func (_m *MockUsers) DeleteU(c context.Context, username string) error {
+// DeleteUser provides a mock function with given fields: c, username
+func (_m *MockUsers) DeleteUser(c context.Context, username string) error {
 	ret := _m.Called(c, username)
 
 	var r0 error
@@ -25,13 +25,13 @@ func (_m *MockUsers) DeleteU(c context.Context, username string) error {
 	return r0
 }
 
-// InsertU provides a mock function with given fields: c, rec
-func (_m *MockUsers) InsertU(c context.Context, rec *model.User) error {
-	ret := _m.Called(c, rec)
+// InsertUser provides a mock function with given fields: c, rec
+func (_m *MockUsers) InsertUser(c context.Context, user *model.User) error {
+	ret := _m.Called(c, user)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *model.User) error); ok {
-		r0 = rf(c, rec)
+		r0 = rf(c, user)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -39,8 +39,8 @@ func (_m *MockUsers) InsertU(c context.Context, rec *model.User) error {
 	return r0
 }
 
-// SelectAllU provides a mock function with given fields: c
-func (_m *MockUsers) SelectAllU(c context.Context) ([]*model.User, error) {
+// SelectAllUser provides a mock function with given fields: c
+func (_m *MockUsers) SelectAllUser(c context.Context) ([]*model.User, error) {
 	ret := _m.Called(c)
 
 	var r0 []*model.User
@@ -62,13 +62,13 @@ func (_m *MockUsers) SelectAllU(c context.Context) ([]*model.User, error) {
 	return r0, r1
 }
 
-// SelectU provides a mock function with given fields: c, username, password
-func (_m *MockUsers) SelectU(c context.Context, username string, password string) (*model.User, error) {
-	ret := _m.Called(c, username, password)
+// SelectUser provides a mock function with given fields: c, username, password
+func (_m *MockUsers) SelectUser(c context.Context, username string) (*model.User, error) {
+	ret := _m.Called(c, username)
 
 	var r0 *model.User
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *model.User); ok {
-		r0 = rf(c, username, password)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *model.User); ok {
+		r0 = rf(c, username)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.User)
@@ -76,8 +76,8 @@ func (_m *MockUsers) SelectU(c context.Context, username string, password string
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(c, username, password)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(c, username)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -85,8 +85,8 @@ func (_m *MockUsers) SelectU(c context.Context, username string, password string
 	return r0, r1
 }
 
-// UpdateU provides a mock function with given fields: c, username, isAdmin
-func (_m *MockUsers) UpdateU(c context.Context, username string, isAdmin bool) error {
+// UpdateUser provides a mock function with given fields: c, username, isAdmin
+func (_m *MockUsers) UpdateUser(c context.Context, username string, isAdmin bool) error {
 	ret := _m.Called(c, username, isAdmin)
 
 	var r0 error

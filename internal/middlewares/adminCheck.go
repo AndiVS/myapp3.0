@@ -1,5 +1,5 @@
-// Package middlewar fro middlewars
-package middlewar
+// Package middlewares
+package middlewares
 
 import (
 	"github.com/golang-jwt/jwt"
