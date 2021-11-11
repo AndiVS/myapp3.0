@@ -5,114 +5,81 @@ import (
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"myapp3.0/internal/model"
+	"myapp3.0/internal/repository"
 	"myapp3.0/internal/service"
-
 	"net/http"
 )
 
 // UserHandler struct that contain repository linc
 type UserHandler struct {
-	Service *service.Authorizer
+	Service service.Users
 }
 
-// NewU add new user handler
-func NewU(Service *service.Authorizer) *UserHandler {
+// NewHandlerUser add new user handler
+func NewHandlerUser(Service service.Users) *UserHandler {
 	return &UserHandler{Service: Service}
 }
 
-// AddU record about cat
-func (h *UserHandler) AddU(c echo.Context) error {
-	rec := new(model.User)
+// GetUser provides user
+func (h *UserHandler) GetUser(c echo.Context) error {
+	user := new(model.User)
 
-	if err := c.Bind(rec); err != nil {
+	if err := c.Bind(user); err != nil {
 		log.Errorf("Bind fail : %v\n", err)
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err := h.Service.AddU(c.Request().Context(), rec)
-
+	user, err := h.Service.GetUser(c.Request().Context(), user.Username)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return echo.NewHTTPError(http.StatusCreated, rec.Username)
+	return c.JSON(http.StatusOK, user)
 }
 
-// GetU provides cat
-func (h *UserHandler) GetU(c echo.Context) error {
-	rec := new(model.User)
+// GetAllUser provides all users
+func (h *UserHandler) GetAllUser(c echo.Context) error {
+	var user []*model.User
 
-	if err := c.Bind(rec); err != nil {
+	user, err := h.Service.GetAllUser(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, user)
+}
+
+// UpdateUser updating record about user
+func (h *UserHandler) UpdateUser(c echo.Context) error {
+	user := new(model.User)
+
+	if err := c.Bind(user); err != nil {
 		log.Errorf("Bind fail : %v\n", err)
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	r, err := h.Service.GetU(c.Request().Context(), rec.Username, rec.Password)
-
+	err := h.Service.UpdateUser(c.Request().Context(), user.Username, user.IsAdmin)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		if err.Error() == repository.ErrNotFound.Error() {
+			return echo.NewHTTPError(http.StatusNotFound)
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return echo.NewHTTPError(http.StatusOK, r)
+	return c.NoContent(http.StatusOK)
 }
 
-// GetAllU provides all cats
-func (h *UserHandler) GetAllU(c echo.Context) error {
-	var rec []*model.User
-
-	rec, err := h.Service.GetAllU(c.Request().Context())
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
-	}
-
-	return echo.NewHTTPError(http.StatusOK, rec)
-}
-
-// UpdateU updating record about cat
-func (h *UserHandler) UpdateU(c echo.Context) error {
-	rec := new(model.User)
-
-	if err := c.Bind(rec); err != nil {
-		log.Errorf("Bind fail : %v\n", err)
-		return echo.NewHTTPError(http.StatusBadRequest)
-	}
-
-	err := h.Service.UpdateU(c.Request().Context(), rec.Username, rec.IsAdmin)
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
-	}
-
-	return echo.NewHTTPError(http.StatusOK, "completed successfully")
-}
-
-// DeleteU record about cat
-func (h *UserHandler) DeleteU(c echo.Context) error {
+// DeleteUser delete record about user
+func (h *UserHandler) DeleteUser(c echo.Context) error {
 	username := c.Param("username")
 
-	err := h.Service.DeleteU(c.Request().Context(), username)
-
+	err := h.Service.DeleteUser(c.Request().Context(), username)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		if err.Error() == "not found" {
+			return echo.NewHTTPError(http.StatusNotFound)
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return echo.NewHTTPError(http.StatusOK, "completed successfully")
-}
-
-// SignIn generate token
-func (h *UserHandler) SignIn(c echo.Context) error {
-	rec := new(model.User)
-
-	if err := c.Bind(rec); err != nil {
-		log.Errorf("Bind fail : %v\n", err)
-		return echo.NewHTTPError(http.StatusBadRequest)
-	}
-
-	err := h.Service.SignIn(c, rec)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
-	}
-
-	return err
+	return c.NoContent(http.StatusOK)
 }

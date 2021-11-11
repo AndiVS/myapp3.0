@@ -2,95 +2,110 @@
 package handler
 
 import (
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"myapp3.0/internal/model"
+	"myapp3.0/internal/repository"
 	"myapp3.0/internal/service"
-
 	"net/http"
 )
 
 // CatHandler struct that contain repository linc
 type CatHandler struct {
-	Service *service.Service
+	Service service.Cats
 }
 
-// NewC function for customization handler
-func NewC(Service *service.Service) *CatHandler {
+// NewHandlerCat function for customization handler
+func NewHandlerCat(Service service.Cats) *CatHandler {
 	return &CatHandler{Service: Service}
 }
 
-// AddC record about cat
-func (h *CatHandler) AddC(c echo.Context) error {
-	rec := new(model.Record)
+// AddCat record about cat
+func (h *CatHandler) AddCat(c echo.Context) error {
+	cat := new(model.Cat)
 
-	if err := c.Bind(rec); err != nil {
+	if err := c.Bind(cat); err != nil {
+		log.Errorf("Bind fail : %v\n", err)
+		return echo.NewHTTPError(http.StatusBadRequest)
+	}
+	cat.ID = uuid.New()
+
+	id, err := h.Service.AddCat(c.Request().Context(), cat)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, id)
+}
+
+// GetCat provides cat
+func (h *CatHandler) GetCat(c echo.Context) error {
+	id := c.Param("_id")
+	_id, err1 := uuid.Parse(id)
+	if err1 != nil {
+		return echo.NewHTTPError(http.StatusBadRequest)
+	}
+
+	r, err := h.Service.GetCat(c.Request().Context(), _id)
+	if err != nil {
+		if err.Error() == repository.ErrNotFound.Error() {
+			return echo.NewHTTPError(http.StatusNotFound)
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, r)
+}
+
+// GetAllCat provides all cats
+func (h *CatHandler) GetAllCat(c echo.Context) error {
+	var cat []*model.Cat
+
+	cat, err := h.Service.GetAllCat(c.Request().Context())
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, cat)
+}
+
+// UpdateCat updating record about cat
+func (h *CatHandler) UpdateCat(c echo.Context) error {
+	cat := new(model.Cat)
+
+	if err := c.Bind(cat); err != nil {
 		log.Errorf("Bind fail : %v\n", err)
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err := h.Service.AddC(c.Request().Context(), rec)
-
+	err := h.Service.UpdateCat(c.Request().Context(), cat)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		if err.Error() == repository.ErrNotFound.Error() {
+			return echo.NewHTTPError(http.StatusNotFound)
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return echo.NewHTTPError(http.StatusCreated, rec.ID)
+	return c.NoContent(http.StatusOK)
 }
 
-// GetC provides cat
-func (h *CatHandler) GetC(c echo.Context) error {
-	id := c.Param("id")
-
-	r, err := h.Service.GetC(c.Request().Context(), id)
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
-	}
-
-	return echo.NewHTTPError(http.StatusOK, r)
-}
-
-// GetAllC provides all cats
-func (h *CatHandler) GetAllC(c echo.Context) error {
-	var rec []*model.Record
-
-	rec, err := h.Service.GetAllC(c.Request().Context())
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
-	}
-
-	return echo.NewHTTPError(http.StatusOK, rec)
-}
-
-// UpdateC updating record about cat
-func (h *CatHandler) UpdateC(c echo.Context) error {
-	rec := new(model.Record)
-
-	if err := c.Bind(rec); err != nil {
-		log.Errorf("Bind fail : %v\n", err)
+// DeleteCat record about cat
+func (h *CatHandler) DeleteCat(c echo.Context) error {
+	id := c.Param("_id")
+	_id, err1 := uuid.Parse(id)
+	if err1 != nil {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err := h.Service.UpdateC(c.Request().Context(), rec)
-
+	err := h.Service.DeleteCat(c.Request().Context(), _id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		if err.Error() == repository.ErrNotFound.Error() {
+			return echo.NewHTTPError(http.StatusNotFound)
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return echo.NewHTTPError(http.StatusOK, "completed successfully")
-}
-
-// DeleteC record about cat
-func (h *CatHandler) DeleteC(c echo.Context) error {
-	id := c.Param("id")
-
-	err := h.Service.DeleteC(c.Request().Context(), id)
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
-	}
-
-	return echo.NewHTTPError(http.StatusOK, "completed successfully")
+	return c.NoContent(http.StatusOK)
 }

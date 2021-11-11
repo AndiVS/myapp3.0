@@ -2,28 +2,38 @@ package main
 
 import (
 	"context"
-
+	"fmt"
+	"github.com/go-redis/redis/v7"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/grpc"
 	"myapp3.0/internal/config"
 	"myapp3.0/internal/handler"
-	"myapp3.0/internal/middlewar"
+	"myapp3.0/internal/middlewares"
 	"myapp3.0/internal/model"
 	"myapp3.0/internal/repository"
+	"myapp3.0/internal/server"
 	"myapp3.0/internal/service"
-
+	"myapp3.0/protocol"
+	"net"
+	"os"
 	"time"
 )
 
-func main() {
-	e := echo.New()
+const mongodatabase = "mongodb"
+const postgresdatabase = "postgres"
+const secho = "echo"
+const sgrpc = "grpc"
+const rediska = "redis"
+const kafka = "kafka"
+const rabit = "rabit"
 
-	customFormatter := new(log.TextFormatter)
-	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
-	customFormatter.FullTimestamp = true
-	log.SetFormatter(customFormatter)
+func main() {
+	setLog()
 
 	cfg := config.Config{}
 	config.New(&cfg)
@@ -32,82 +42,203 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to parse loglevel: %s", cfg.LogLevel)
 	}
-
 	log.SetLevel(logLevel)
 
+	cfg.DBURL = getURL(&cfg)
 	log.Infof("Using DB URL: %s", cfg.DBURL)
 
-	pool, err := pgxpool.Connect(context.Background(), cfg.DBURL)
-	if err != nil {
-		log.Fatalf("Unable to connection to database: %v", err)
+	access := service.NewJWTManager([]byte(cfg.AuthenticationKey), time.Duration(cfg.AuthenticationTokenDuration)*time.Second)
+	refresh := service.NewJWTManager([]byte(cfg.RefreshKey), time.Duration(cfg.RefreshTokenDuration)*time.Second)
+
+	var recordRepository repository.Cats
+	switch cfg.System {
+	case mongodatabase:
+		mongoClient, mongoDatabase := getMongo(cfg.DBURL, cfg.DBName)
+		defer mongoClient.Disconnect(context.Background()) //nolint:errcheck,gocritic
+		recordRepository = repository.NewRepository(mongoDatabase)
+	case postgresdatabase:
+		pool := getPostgres(cfg.DBURL)
+		if err != nil {
+			log.Errorf("Unable to connection to database: %v", err)
+		}
+		defer pool.Close()
+		recordRepository = repository.NewRepository(pool)
 	}
-	defer pool.Close()
+
 	log.Infof("Connected!")
 
 	log.Infof("Starting HTTP server at %s...", cfg.Port)
 
-	initHandlers(pool, e, &cfg)
-	err = e.Start(cfg.Port)
+	cons := new(model.Redis)
+	switch rediska {
+	case rediska:
+		cons = runRedis()
+	case kafka:
+
+	case rabit:
+
+	}
+
+	recordService := service.NewServiceCat(recordRepository, cons)
+	userService := service.NewServiceUser(recordRepository)
+	authenticationService := service.NewServiceAuthentication(recordRepository, access, refresh, cfg.HashSalt)
+
+	switch cfg.Server {
+	case secho:
+		catHandler := handler.NewHandlerCat(recordService)
+		userHandler := handler.NewHandlerUser(userService)
+		authenticationHandler := handler.NewHandlerAuthentication(authenticationService)
+		err = runEchoServer(catHandler, userHandler, authenticationHandler, &cfg)
+	case sgrpc:
+		catServer := server.NewCatServer(recordService)
+		userServer := server.NewUserServer(userService)
+		authenticationServer := server.NewAuthenticationServer(authenticationService)
+		err = runGRPCServer(catServer, userServer, authenticationServer, &cfg, access, refresh)
+	}
+
+	log.Info("HTTP server terminated", err)
+}
+
+func setLog() {
+	customFormatter := new(log.TextFormatter)
+	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
+	customFormatter.FullTimestamp = true
+	log.SetFormatter(customFormatter)
+}
+
+func getURL(cfg *config.Config) (URL string) {
+	var str string
+	switch cfg.System {
+	case mongodatabase:
+		str = fmt.Sprintf("%s://%s:%d",
+			cfg.System,
+			cfg.DBHost,
+			cfg.DBPort,
+		)
+	case postgresdatabase:
+		str = fmt.Sprintf("%s://%s:%s@%s:%d/%s",
+			cfg.System,
+			cfg.DBUser,
+			// os.Getenv("DB_PASSWORD"),
+			cfg.DBPassword,
+			cfg.DBHost,
+			cfg.DBPort,
+			cfg.DBName,
+		)
+	}
+	return str
+}
+
+func getPostgres(url string) *pgxpool.Pool {
+	pool, err := pgxpool.Connect(context.Background(), url)
+	if err != nil {
+		log.Fatalf("Unable to connection to database: %v", err)
+	}
+	return pool
+}
+
+func getMongo(url, dbname string) (*mongo.Client, *mongo.Database) {
+	mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI(url))
+	if err != nil {
+		log.Fatalf("Unable to connection to database: %v", err)
+	}
+
+	db := mongoClient.Database(dbname)
+	return mongoClient, db
+}
+
+func runGRPCServer(recServer protocol.CatServiceServer, userServer protocol.UserServiceServer, serviceServer protocol.AuthServiceServer, cfg *config.Config, access, refresh *service.JWTManager) error {
+
+	listener, err := net.Listen("tcp", cfg.Port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	interceptor := server.NewAuthInterceptor(access, refresh, nil)
+	serverOptions := []grpc.ServerOption{
+		grpc.UnaryInterceptor(interceptor.Unary()),
+		grpc.StreamInterceptor(interceptor.Stream()),
+	}
+
+	grpcServer := grpc.NewServer(serverOptions...)
+	//grpcServer := grpc.NewServer()
+	protocol.RegisterUserServiceServer(grpcServer, userServer)
+	protocol.RegisterCatServiceServer(grpcServer, recServer)
+	protocol.RegisterAuthServiceServer(grpcServer, serviceServer)
+	log.Printf("server listening at %v", listener.Addr())
+	if err := grpcServer.Serve(listener); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+
+	return grpcServer.Serve(listener)
+}
+
+func runEchoServer(catHandler *handler.CatHandler, userHandler *handler.UserHandler, authenticationHandler *handler.AuthenticationHandler, cfg *config.Config) error {
+	e := echo.New()
+	initHandlers(catHandler, userHandler, authenticationHandler, e, cfg)
+	err := e.Start(cfg.Port)
 	if err != nil {
 		log.Error("Start server error")
 	}
-
-	log.Info("HTTP server terminated")
+	return err
 }
 
-func initHandlers(pool *pgxpool.Pool, e *echo.Echo, cfg *config.Config) *echo.Echo {
+func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandler, authenticationHandler *handler.AuthenticationHandler, e *echo.Echo, cfg *config.Config) *echo.Echo {
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		CustomTimeFormat: "2006-01-02 15:04:05",
 	}))
 	e.Use(middleware.Recover())
 
-	recordRepository := repository.New(pool)
-	recordService := service.New(recordRepository)
-	recordHandler := handler.NewC(recordService)
-
-	userService := service.NewAuthorizer(
-		recordRepository,
-		cfg.HashSalt,
-		[]byte(cfg.AuthenticationKey),
-		[]byte(cfg.RefreshKey),
-		time.Duration(cfg.AuthenticationTokenDuration)*time.Second,
-		time.Duration(cfg.RefreshTokenDuration)*time.Second,
-	)
-
-	userHandler := handler.NewU(userService)
-
-	e.POST("/auth/sign-up", userHandler.AddU)
-	e.POST("/auth/sign-in", userHandler.SignIn)
-
+	e.POST("/auth/sign-up", authenticationHandler.SignUp)
+	e.POST("/auth/sign-in", authenticationHandler.SignIn)
 	admin := e.Group("/admin")
-	// Configure middleware with the custom claims type
-	configur := middleware.JWTConfig{
+
+	configuration := middleware.JWTConfig{
 		Claims:     &model.Claims{},
-		SigningKey: []byte(cfg.AuthenticationKey),
+		SigningKey: cfg.AuthenticationKey,
 	}
+	access := service.NewJWTManager([]byte(cfg.AuthenticationKey), time.Duration(cfg.AuthenticationTokenDuration)*time.Second)
+	refresh := service.NewJWTManager([]byte(cfg.RefreshKey), time.Duration(cfg.RefreshTokenDuration)*time.Second)
+	admin.Use(middleware.JWTWithConfig(configuration))
+	admin.Use(middlewares.Check)
+	admin.Use(middlewares.TokenRefresherMiddleware(access, refresh))
 
-	admin.Use(middleware.JWTWithConfig(configur))
-	admin.Use(middlewar.Check)
-	admin.Use(userService.TokenRefresherMiddleware)
+	admin.POST("/records", catHandler.AddCat)
+	admin.GET("/records/:_id", catHandler.GetCat)
+	admin.GET("/records", catHandler.GetAllCat)
+	admin.PUT("/records/:_id", catHandler.UpdateCat)
+	admin.DELETE("/records/:_id", catHandler.DeleteCat)
 
-	admin.POST("/records", recordHandler.AddC)
-	admin.GET("/records/:id", recordHandler.GetC)
-	admin.GET("/records", recordHandler.GetAllC)
-	admin.PUT("/records/:id", recordHandler.UpdateC)
-	admin.DELETE("/records/:id", recordHandler.DeleteC)
-
-	admin.POST("/user", userHandler.AddU)
-	admin.GET("/user/:username", userHandler.GetU)
-	admin.GET("/user", userHandler.GetAllU)
-	admin.PUT("/user/:username", userHandler.UpdateU)
-	admin.DELETE("/user/:username", userHandler.DeleteU)
+	admin.GET("/user", userHandler.GetAllUser)
+	admin.PUT("/user/:username", userHandler.UpdateUser)
+	admin.DELETE("/user/:username", userHandler.DeleteUser)
 
 	user := e.Group("/user")
 
-	user.Use(middleware.JWTWithConfig(configur))
-	user.Use(userService.TokenRefresherMiddleware)
-	user.GET("/records/:id", recordHandler.GetC)
-	user.GET("/records", recordHandler.GetAllC)
+	user.Use(middleware.JWTWithConfig(configuration))
+	//user.Use(middlewares.TokenRefresherMiddleware(authenticationHandler.Service.Access,authenticationHandler.Service.Refresh))
+
+	user.GET("/records", catHandler.GetAllCat)
+	user.GET("/records/:_id", catHandler.GetCat)
 
 	return e
 }
+
+func runRedis() *model.Redis {
+	adr := fmt.Sprintf("%s:6379", os.Getenv("REDIS_HOST"))
+	client := redis.NewClient(&redis.Options{
+		Addr:     "172.28.1.4:6379",
+		Password: "",
+		DB:       0, // use default DB
+	})
+	_, err := client.Ping().Result()
+	if err != nil {
+		log.Errorf("ping %v__ error __ %v", adr, err)
+	}
+
+	redisStruct := model.NewRedisClient(client, "STREAM")
+
+	return redisStruct
+}
+
+//test for key
