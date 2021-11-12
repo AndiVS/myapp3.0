@@ -2,12 +2,13 @@ package server
 
 import (
 	"context"
+
+	"github.com/AndiVS/myapp3.0/internal/service"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"log"
-	"myapp3.0/internal/service"
 )
 
 // AuthInterceptor is a server interceptor for authentication and authorization
@@ -61,7 +62,6 @@ func (interceptor *AuthInterceptor) Stream() grpc.StreamServerInterceptor {
 }
 
 func (interceptor *AuthInterceptor) authorize(ctx context.Context, method string) error {
-
 	if method == "/proto.AuthService/SignIn" || method == "/proto.AuthService/SignUp" {
 		return nil
 	}
@@ -76,7 +76,7 @@ func (interceptor *AuthInterceptor) authorize(ctx context.Context, method string
 		return status.Errorf(codes.Unauthenticated, "authorization token is not provided")
 	}
 	accessToken := values[0]
-	//claims, err := interceptor.access.Verify(accessToken)
+	// claims, err := interceptor.access.Verify(accessToken)
 	_, err := interceptor.access.Verify(accessToken)
 	if err != nil {
 		return status.Errorf(codes.Unauthenticated, "access token is invalid: %v", err)

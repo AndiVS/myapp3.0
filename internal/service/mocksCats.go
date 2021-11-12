@@ -4,7 +4,7 @@ package service
 
 import context "context"
 import mock "github.com/stretchr/testify/mock"
-import model "myapp3.0/internal/model"
+import model "github.com/AndiVS/myapp3.0/internal/model"
 
 import uuid "github.com/google/uuid"
 

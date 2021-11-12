@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
-	"myapp3.0/internal/model"
-	"myapp3.0/internal/service"
-	"myapp3.0/protocol"
+
+	"github.com/AndiVS/myapp3.0/internal/model"
+	"github.com/AndiVS/myapp3.0/internal/service"
+	"github.com/AndiVS/myapp3.0/protocol"
 )
 
+// AuthenticationServer for grcp
 type AuthenticationServer struct {
 	Service service.Authentication
 	protocol.UnimplementedAuthServiceServer

@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
+	model "github.com/AndiVS/myapp3.0/internal/model"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	model "myapp3.0/internal/model"
 )
 
 // InsertUser function for inserting item from a table

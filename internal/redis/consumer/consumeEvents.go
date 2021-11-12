@@ -1,10 +1,11 @@
-package consumer
+// Package consumerredis for redis
+package consumerredis
 
 import (
+	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/go-redis/redis/v7"
 	log "github.com/sirupsen/logrus"
 	"github.com/vmihailenco/msgpack/v4"
-	"myapp3.0/internal/model"
 )
 
 // ConsumeEvents consume events
@@ -19,12 +20,10 @@ func ConsumeEvents(red *model.Redis, catsMap map[string]*model.Cat) {
 
 		stream := streams[0].Messages[0]
 		processStream(stream, catsMap)
-
 	}
 }
 
 func processStream(stream redis.XMessage, catsMap map[string]*model.Cat) {
-
 	destination := stream.Values["destination"].(string)
 	command := stream.Values["command"].(string)
 
@@ -54,6 +53,7 @@ func processStream(stream redis.XMessage, catsMap map[string]*model.Cat) {
 		cat := new(model.Cat)
 		err := msgpack.Unmarshal([]byte(stream.Values["data"].(string)), cat)
 		if err != nil {
+			log.Printf("err %v ", err)
 		}
 
 		switch command {

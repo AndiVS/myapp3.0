@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/AndiVS/myapp3.0/internal/model"
+	"github.com/AndiVS/myapp3.0/internal/repository"
+	"github.com/AndiVS/myapp3.0/internal/service"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"myapp3.0/internal/model"
-	"myapp3.0/internal/repository"
-	"myapp3.0/internal/service"
 
 	"net/http"
 	"net/http/httptest"

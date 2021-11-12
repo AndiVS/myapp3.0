@@ -1,3 +1,4 @@
+// Package client for grpc
 package client
 
 import (
@@ -81,7 +82,7 @@ func (interceptor *AuthInterceptor) Stream() grpc.StreamClientInterceptor {
 }
 
 func (interceptor *AuthInterceptor) attachToken(ctx context.Context) context.Context {
-	//ct  := metadata.AppendToOutgoingContext(ctx, "refresh", interceptor.refreshToken)
+	// ct  := metadata.AppendToOutgoingContext(ctx, "refresh", interceptor.refreshToken)
 	return metadata.AppendToOutgoingContext(ctx, "access", interceptor.accessToken)
 }
 

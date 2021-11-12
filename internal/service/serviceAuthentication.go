@@ -2,19 +2,23 @@ package service
 
 import (
 	"context"
+
+	"github.com/AndiVS/myapp3.0/internal/model"
+	"github.com/AndiVS/myapp3.0/internal/repository"
+	"github.com/AndiVS/myapp3.0/protocol"
 	"github.com/labstack/echo/v4"
-	"myapp3.0/internal/model"
-	"myapp3.0/internal/repository"
-	"myapp3.0/protocol"
+
 	"net/http"
 	"reflect"
 )
 
+// Authentication aunt
 type Authentication interface {
 	SignUp(c context.Context, user *model.User) error
 	SignIn(c context.Context, user *model.User) (string, string, error)
 }
 
+// AuthenticationService aunt
 type AuthenticationService struct {
 	Rep repository.Users
 	protocol.UnimplementedUserServiceServer
@@ -23,6 +27,7 @@ type AuthenticationService struct {
 	HashSalt string
 }
 
+// NewServiceAuthentication create aunt
 func NewServiceAuthentication(repositories interface{}, access, refresh *JWTManager, hashSalt string) Authentication {
 	var mongo *repository.Mongo
 	var postgres *repository.Postgres
@@ -57,7 +62,7 @@ func (s *AuthenticationService) SignIn(c context.Context, user *model.User) (str
 	if err != nil {
 		return "", "", err
 	}
-	if !PasswordChek(user1.Password, user.Password) {
+	if !PasswordCheck(user1.Password, user.Password) {
 		return "", "", err
 	}
 

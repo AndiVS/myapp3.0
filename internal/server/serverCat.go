@@ -2,18 +2,20 @@ package server
 
 import (
 	"context"
+
+	"github.com/AndiVS/myapp3.0/internal/model"
+	"github.com/AndiVS/myapp3.0/internal/service"
+	"github.com/AndiVS/myapp3.0/protocol"
 	"github.com/google/uuid"
-	"myapp3.0/internal/model"
-	"myapp3.0/internal/service"
-	"myapp3.0/protocol"
 )
 
+// CatServer struct for grcp
 type CatServer struct {
 	Service service.Cats
 	protocol.UnimplementedCatServiceServer
 }
 
-//NewCatServer as
+// NewCatServer as
 func NewCatServer(Service service.Cats) *CatServer {
 	return &CatServer{Service: Service}
 }

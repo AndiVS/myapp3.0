@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 
+	model "github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/jackc/pgx/v4"
 	log "github.com/sirupsen/logrus"
-	model "myapp3.0/internal/model"
 )
 
 // InsertUser function for inserting item from a table

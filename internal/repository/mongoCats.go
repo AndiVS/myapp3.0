@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
+	model "github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	model "myapp3.0/internal/model"
 )
 
 // InsertCat function for inserting item from a table

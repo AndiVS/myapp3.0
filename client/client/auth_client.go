@@ -2,10 +2,11 @@ package client
 
 import (
 	"context"
-	"myapp3.0/protocol"
-	"time"
 
+	"github.com/AndiVS/myapp3.0/protocol"
 	"google.golang.org/grpc"
+
+	"time"
 )
 
 // AuthClient is a client to call authentication RPC
@@ -16,7 +17,7 @@ type AuthClient struct {
 }
 
 // NewAuthClient returns a new auth client
-func NewAuthClient(cc *grpc.ClientConn, username string, password string) *AuthClient {
+func NewAuthClient(cc *grpc.ClientConn, username, password string) *AuthClient {
 	service := protocol.NewAuthServiceClient(cc)
 	return &AuthClient{service, username, password}
 }

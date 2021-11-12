@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.mongodb.org/mongo-driver/mongo"
-	"myapp3.0/internal/model"
 
 	"reflect"
 )

@@ -4,9 +4,9 @@ import (
 	"crypto/sha256"
 	"fmt"
 
+	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
-	"myapp3.0/internal/model"
 
 	"net/http"
 	"time"
@@ -24,7 +24,7 @@ func NewJWTManager(secretKey []byte, tokenDuration time.Duration) *JWTManager {
 }
 
 // GenerateTokens func for token generation
-func GenerateTokens(user *model.User, access *JWTManager, refresh *JWTManager) (string, string, error) {
+func GenerateTokens(user *model.User, access, refresh *JWTManager) (string, string, error) {
 	accessToken, err := GenerateToken(user, access)
 	if err != nil {
 		return "", "", err
@@ -38,7 +38,8 @@ func GenerateTokens(user *model.User, access *JWTManager, refresh *JWTManager) (
 	return accessToken, refreshToken, nil
 }
 
-func PasswordChek(pass1, pass2 string) bool {
+// PasswordCheck che
+func PasswordCheck(pass1, pass2 string) bool {
 	return pass1 == pass2
 }
 
@@ -51,6 +52,7 @@ func PasswordGenerator(password, hashSalt string) string {
 	return fmt.Sprintf("%x", pwd.Sum(nil))
 }
 
+// GenerateToken generate jwt token
 func GenerateToken(user *model.User, manager *JWTManager) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &model.Claims{
 		StandardClaims: jwt.StandardClaims{
@@ -69,6 +71,7 @@ func GenerateToken(user *model.User, manager *JWTManager) (string, error) {
 	return tokenString, nil
 }
 
+// SetTokenCookie  set cookie for echo jwt
 func SetTokenCookie(name, token string, expiration time.Time, c echo.Context) {
 	cookie := new(http.Cookie)
 	cookie.Name = name
@@ -79,6 +82,7 @@ func SetTokenCookie(name, token string, expiration time.Time, c echo.Context) {
 	c.SetCookie(cookie)
 }
 
+// SetUserCookie set cookie for echo jwt
 func SetUserCookie(user *model.User, expiration time.Time, c echo.Context) {
 	cookie := new(http.Cookie)
 	cookie.Name = "username"

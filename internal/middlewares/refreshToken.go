@@ -1,10 +1,10 @@
 package middlewares
 
 import (
+	"github.com/AndiVS/myapp3.0/internal/model"
+	"github.com/AndiVS/myapp3.0/internal/service"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
-	"myapp3.0/internal/model"
-	"myapp3.0/internal/service"
 
 	"net/http"
 	"time"

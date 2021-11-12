@@ -1,10 +1,13 @@
-package producer
+// Package producerredisredisredisredis for redis
+package producerredis
 
 import (
 	"fmt"
+
 	"github.com/go-redis/redis/v7"
 )
 
+// GenerateEvent for redis
 func GenerateEvent(destination, command string, data interface{}, client *redis.Client, StreamName string) {
 	newID, err := produceMsg(map[string]interface{}{
 		"destination": destination,
