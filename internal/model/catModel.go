@@ -14,6 +14,11 @@ type Cat struct {
 }
 
 // MarshalBinary Marshal cat for redis stream
-func (cat Cat) MarshalBinary() ([]byte, error) {
+func (cat *Cat) MarshalBinary() ([]byte, error) {
 	return msgpack.Marshal(cat)
+}
+
+// UnmarshalBinary Marshal cat for redis stream
+func (cat *Cat) UnmarshalBinary(data []byte) error {
+	return msgpack.Unmarshal(data, cat)
 }

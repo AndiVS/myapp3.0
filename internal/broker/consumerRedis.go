@@ -1,5 +1,5 @@
 // Package consumerredis for redis
-package consumer
+package broker
 
 import (
 	"github.com/AndiVS/myapp3.0/internal/model"
@@ -9,10 +9,10 @@ import (
 )
 
 // ConsumeEvents consume events
-func ConsumeEvents(red *model.Redis, catsMap map[string]*model.Cat) {
+func (r *Redis) ConsumeEvents(catsMap map[string]*model.Cat) {
 	for {
-		streams, err := red.Client.XRead(&redis.XReadArgs{
-			Streams: []string{red.StreamName, "$"},
+		streams, err := r.Client.XRead(&redis.XReadArgs{
+			Streams: []string{r.StreamName, "$"},
 		}).Result()
 		if err != nil {
 			log.Printf("err on consume events: %+v\n", err)

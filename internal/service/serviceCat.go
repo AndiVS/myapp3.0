@@ -3,10 +3,8 @@ package service
 
 import (
 	"context"
-
+	"github.com/AndiVS/myapp3.0/internal/broker"
 	"github.com/AndiVS/myapp3.0/internal/model"
-	"github.com/AndiVS/myapp3.0/internal/redis/consumer"
-	"github.com/AndiVS/myapp3.0/internal/redis/producer"
 	"github.com/AndiVS/myapp3.0/internal/repository"
 	"github.com/google/uuid"
 
@@ -26,11 +24,11 @@ type Cats interface {
 type ServiceCat struct {
 	Rep    repository.Cats
 	CatMap map[string]*model.Cat
-	Redis  *model.Redis
+	Broker broker.Broker
 }
 
 // NewServiceCat used for setting services
-func NewServiceCat(Rep interface{}, Redis *model.Redis) Cats {
+func NewServiceCat(Rep interface{}, Broker interface{}) Cats {
 	serviceCat := ServiceCat{}
 
 	var mongo *repository.Mongo
@@ -50,9 +48,19 @@ func NewServiceCat(Rep interface{}, Redis *model.Redis) Cats {
 	}
 	serviceCat.CatMap = catMap
 
-	go consumer.ConsumeEvents(Redis, catMap)
+	var red broker.Redis
+	var kaf *broker.Kafka
 
-	serviceCat.Redis = Redis
+	switch reflect.TypeOf(Broker) {
+	case reflect.TypeOf(red):
+		Redis := Broker.(*broker.Redis)
+		serviceCat.Broker = Redis
+		go serviceCat.Broker.ConsumeEvents(catMap)
+	case reflect.TypeOf(kaf):
+		Kafka := Broker.(*broker.Kafka)
+		serviceCat.Broker = Kafka
+		go serviceCat.Broker.ConsumeEvents(catMap)
+	}
 
 	return &serviceCat
 }
@@ -60,7 +68,8 @@ func NewServiceCat(Rep interface{}, Redis *model.Redis) Cats {
 // AddCat record about cat
 func (s *ServiceCat) AddCat(c context.Context, cat *model.Cat) (uuid.UUID, error) {
 	s.CatMap[cat.ID.String()] = cat
-	producer.GenerateEvent("cat", "Insert", cat, s.Redis.Client, s.Redis.StreamName)
+	str := s.Broker.GetString()
+	s.Broker.ProduceEvent("cat", "Insert", cat, str)
 	return s.Rep.InsertCat(c, cat)
 }
 
@@ -81,14 +90,16 @@ func (s *ServiceCat) GetAllCat(c context.Context) ([]*model.Cat, error) {
 
 // UpdateCat updating record about cat
 func (s *ServiceCat) UpdateCat(c context.Context, cat *model.Cat) error {
+	str := s.Broker.GetString()
 	s.CatMap[cat.ID.String()] = cat
-	producer.GenerateEvent("cat", "Update", cat, s.Redis.Client, s.Redis.StreamName)
+	s.Broker.ProduceEvent("cat", "Update", cat, str)
 	return s.Rep.UpdateCat(c, cat)
 }
 
 // DeleteCat record about cat
 func (s *ServiceCat) DeleteCat(c context.Context, id uuid.UUID) error {
 	delete(s.CatMap, id.String())
-	producer.GenerateEvent("cat", "Delete", model.Cat{ID: id}, s.Redis.Client, s.Redis.StreamName)
+	str := s.Broker.GetString()
+	s.Broker.ProduceEvent("cat", "Delete", &model.Cat{ID: id}, str)
 	return s.Rep.DeleteCat(c, id)
 }

@@ -16,6 +16,7 @@ type Config struct {
 	DBURL         string `env:"DBURL" envDefault:"" json:"dburl,omitempty"`
 
 	Server string `env:"SERVER" envDefault:"echo" json:"server"`
+	Broker string `env:"BROKER" envDefault:"redis" json:"broker"`
 
 	System     string `env:"SYSTEM" envDefault:"postgres"`
 	DBUser     string `env:"DB_USER" envDefault:"andeisaldyun"`

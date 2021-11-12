@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/caarlos0/env/v6 v6.7.2
+	github.com/confluentinc/confluent-kafka-go v1.7.0
 	github.com/go-redis/redis/v7 v7.4.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-migrate/migrate/v4 v4.15.1

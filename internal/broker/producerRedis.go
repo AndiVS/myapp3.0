@@ -1,24 +1,25 @@
 // Package producerredisredisredisredis for redis
-package producer
+package broker
 
 import (
 	"fmt"
+	"github.com/AndiVS/myapp3.0/internal/model"
 
 	"github.com/go-redis/redis/v7"
 )
 
-// GenerateEvent for redis
-func GenerateEvent(destination, command string, data interface{}, client *redis.Client, StreamName string) {
-	newID, err := produceMsg(map[string]interface{}{
+// ProduceEvent for redis
+func (r *Redis) ProduceEvent(destination, command string, cat *model.Cat, StreamName string) {
+	newID, err := produceRedisMsg(map[string]interface{}{
 		"destination": destination,
 		"command":     command,
-		"data":        data,
-	}, client, StreamName)
+		"data":        cat,
+	}, r.Client, StreamName)
 
 	checkError(err, command, destination, newID)
 }
 
-func produceMsg(values map[string]interface{}, client *redis.Client, StreamName string) (string, error) {
+func produceRedisMsg(values map[string]interface{}, client *redis.Client, StreamName string) (string, error) {
 	str, err := client.XAdd(&redis.XAddArgs{
 		Stream: StreamName,
 		Values: values,

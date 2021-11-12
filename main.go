@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-
+	"github.com/AndiVS/myapp3.0/internal/broker"
 	"github.com/AndiVS/myapp3.0/internal/config"
 	"github.com/AndiVS/myapp3.0/internal/handler"
 	"github.com/AndiVS/myapp3.0/internal/middlewares"
@@ -72,16 +72,18 @@ func main() {
 
 	log.Infof("Starting HTTP server at %s...", cfg.Port)
 
-	cons := new(model.Redis)
-	switch rediska {
+	var recordService service.Cats
+	switch cfg.Broker {
 	case rediska:
-		cons = runRedis()
+		cons := runRedis()
+		recordService = service.NewServiceCat(recordRepository, cons)
 	case kafka:
-
+		cons := runKafka()
+		recordService = service.NewServiceCat(recordRepository, cons)
 	case rabbit:
 	}
 
-	recordService := service.NewServiceCat(recordRepository, cons)
+	//recordService := service.NewServiceCat(recordRepository, cons)
 	userService := service.NewServiceUser(recordRepository)
 	authenticationService := service.NewServiceAuthentication(recordRepository, access, refresh, cfg.HashSalt)
 
@@ -174,7 +176,8 @@ func runGRPCServer(recServer protocol.CatServiceServer, userServer protocol.User
 	return grpcServer.Serve(listener)
 }
 
-func runEchoServer(catHandler *handler.CatHandler, userHandler *handler.UserHandler, authenticationHandler *handler.AuthenticationHandler, cfg *config.Config) error {
+func runEchoServer(catHandler *handler.CatHandler, userHandler *handler.UserHandler,
+	authenticationHandler *handler.AuthenticationHandler, cfg *config.Config) error {
 	e := echo.New()
 	initHandlers(catHandler, userHandler, authenticationHandler, e, cfg)
 	err := e.Start(cfg.Port)
@@ -226,7 +229,7 @@ func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandl
 	return e
 }
 
-func runRedis() *model.Redis {
+func runRedis() broker.Broker {
 	adr := fmt.Sprintf("%s:6379", os.Getenv("REDIS_HOST"))
 	client := redis.NewClient(&redis.Options{
 		Addr:     "172.28.1.4:6379",
@@ -238,7 +241,16 @@ func runRedis() *model.Redis {
 		log.Errorf("ping %v__ error __ %v", adr, err)
 	}
 
-	redisStruct := model.NewRedisClient(client, "STREAM")
+	redisStruct := broker.NewRedisClient(client, "STREAM")
 
 	return redisStruct
+}
+
+func runKafka() broker.Broker {
+	consumer := broker.StartKafkaConsumer()
+	producer := broker.StartKafkaProducer()
+
+	kafkaStruct := broker.NewKafka(consumer, producer, "Topic")
+
+	return kafkaStruct
 }
