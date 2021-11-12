@@ -1,5 +1,5 @@
 // Package consumerredis for redis
-package consumerredis
+package consumer
 
 import (
 	"github.com/AndiVS/myapp3.0/internal/model"
