@@ -3,28 +3,31 @@ package broker
 
 import (
 	"fmt"
-	"github.com/AndiVS/myapp3.0/internal/model"
+	"log"
 
 	"github.com/go-redis/redis/v7"
 )
 
 // ProduceEvent for redis
-func (r *Redis) ProduceEvent(destination, command string, cat *model.Cat, StreamName string) {
+func (r *Redis) ProduceEvent(destination, command string, data interface{}, StreamName string) {
 	newID, err := produceRedisMsg(map[string]interface{}{
 		"destination": destination,
 		"command":     command,
-		"data":        cat,
+		"data":        data,
 	}, r.Client, StreamName)
 
 	checkError(err, command, destination, newID)
 }
 
 func produceRedisMsg(values map[string]interface{}, client *redis.Client, StreamName string) (string, error) {
+
 	str, err := client.XAdd(&redis.XAddArgs{
 		Stream: StreamName,
 		Values: values,
 	}).Result()
-
+	if err != nil {
+		log.Printf("err in add in stream %v", err)
+	}
 	return str, err
 }
 

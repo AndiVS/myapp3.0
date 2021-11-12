@@ -8,7 +8,7 @@ import (
 
 func StartKafkaProducer() *kafka.Producer {
 
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost"})
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "172.28.1.5"})
 	if err != nil {
 		log.Panic("Kafka producers err %v", err)
 	}
@@ -16,11 +16,11 @@ func StartKafkaProducer() *kafka.Producer {
 	return p
 }
 
-func (k *Kafka) ProduceEvent(destination, command string, cat *model.Cat, topic string) {
+func (k *Kafka) ProduceEvent(destination, command string, data interface{}, topic string) {
 	msgKafka := MessageKafka{
 		Destination: destination,
 		Command:     command,
-		Cat:         *cat,
+		Cat:         data.(model.Cat),
 	}
 
 	msg, err := msgKafka.MarshalBinary()

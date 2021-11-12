@@ -193,7 +193,12 @@ func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandl
 		CustomTimeFormat: "2006-01-02 15:04:05",
 	}))
 	e.Use(middleware.Recover())
-
+	/*
+		e.POST("/records", catHandler.AddCat)
+		e.GET("/records/:_id", catHandler.GetCat)
+		e.GET("/records", catHandler.GetAllCat)
+		e.PUT("/records/:_id", catHandler.UpdateCat)
+		e.DELETE("/records/:_id", catHandler.DeleteCat)*/
 	e.POST("/auth/sign-up", authenticationHandler.SignUp)
 	e.POST("/auth/sign-in", authenticationHandler.SignIn)
 	admin := e.Group("/admin")

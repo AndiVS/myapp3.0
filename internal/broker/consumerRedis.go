@@ -1,11 +1,9 @@
-// Package consumerredis for redis
 package broker
 
 import (
 	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/go-redis/redis/v7"
 	log "github.com/sirupsen/logrus"
-	"github.com/vmihailenco/msgpack/v4"
 )
 
 // ConsumeEvents consume events
@@ -51,7 +49,8 @@ func processStream(stream redis.XMessage, catsMap map[string]*model.Cat) {
 		}*/
 	case "cat":
 		cat := new(model.Cat)
-		err := msgpack.Unmarshal([]byte(stream.Values["data"].(string)), cat)
+
+		err := cat.UnmarshalBinary([]byte(stream.Values["data"].(string)))
 		if err != nil {
 			log.Printf("err %v ", err)
 		}

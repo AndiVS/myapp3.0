@@ -1,14 +1,14 @@
 package broker
 
 import (
+	"encoding/json"
 	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/go-redis/redis/v7"
-	"github.com/vmihailenco/msgpack/v4"
 )
 
 type Broker interface {
-	ProduceEvent(destination, command string, cat *model.Cat, topic string)
+	ProduceEvent(destination, command string, data interface{}, topic string)
 	ConsumeEvents(catsMap map[string]*model.Cat)
 	GetString() string
 }
@@ -45,17 +45,17 @@ func (k *Kafka) GetString() string {
 }
 
 type MessageKafka struct {
-	Destination string    `json:"destination"`
-	Command     string    `json:"command"`
-	Cat         model.Cat `json:"cat"`
+	Destination string    `param:"destination" query:"destination" header:"destination" form:"destination" json:"destination" xml:"destination" bson:"destination"`
+	Command     string    `param:"command" query:"command" header:"command" form:"command" json:"command" xml:"command" bson:"command"`
+	Cat         model.Cat `param:"cat" query:"cat" header:"cat" form:"cat" json:"cat" xml:"cat" bson:"cat"`
 }
 
 // MarshalBinary Marshal cat for redis stream
 func (msg *MessageKafka) MarshalBinary() ([]byte, error) {
-	return msgpack.Marshal(msg)
+	return json.Marshal(msg)
 }
 
 // UnmarshalBinary Marshal cat for redis stream
 func (msg *MessageKafka) UnmarshalBinary(data []byte) error {
-	return msgpack.Unmarshal(data, msg)
+	return json.Unmarshal(data, msg)
 }

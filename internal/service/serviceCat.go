@@ -48,19 +48,19 @@ func NewServiceCat(Rep interface{}, Broker interface{}) Cats {
 	}
 	serviceCat.CatMap = catMap
 
-	var red broker.Redis
+	var red *broker.Redis
 	var kaf *broker.Kafka
 
 	switch reflect.TypeOf(Broker) {
 	case reflect.TypeOf(red):
 		Redis := Broker.(*broker.Redis)
 		serviceCat.Broker = Redis
-		go serviceCat.Broker.ConsumeEvents(catMap)
 	case reflect.TypeOf(kaf):
 		Kafka := Broker.(*broker.Kafka)
 		serviceCat.Broker = Kafka
-		go serviceCat.Broker.ConsumeEvents(catMap)
 	}
+
+	go serviceCat.Broker.ConsumeEvents(catMap)
 
 	return &serviceCat
 }
