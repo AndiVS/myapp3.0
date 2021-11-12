@@ -5,8 +5,8 @@ import (
 	"context"
 
 	"github.com/AndiVS/myapp3.0/internal/model"
-	"github.com/AndiVS/myapp3.0/internal/redis/consumerredis"
-	"github.com/AndiVS/myapp3.0/internal/redis/producerredis"
+	"github.com/AndiVS/myapp3.0/internal/redis/consumer"
+	"github.com/AndiVS/myapp3.0/internal/redis/producer"
 	"github.com/AndiVS/myapp3.0/internal/repository"
 	"github.com/google/uuid"
 
@@ -50,7 +50,7 @@ func NewServiceCat(Rep interface{}, Redis *model.Redis) Cats {
 	}
 	serviceCat.CatMap = catMap
 
-	go consumerredis.ConsumeEvents(Redis, catMap)
+	go consumer.ConsumeEvents(Redis, catMap)
 
 	serviceCat.Redis = Redis
 
@@ -60,7 +60,7 @@ func NewServiceCat(Rep interface{}, Redis *model.Redis) Cats {
 // AddCat record about cat
 func (s *ServiceCat) AddCat(c context.Context, cat *model.Cat) (uuid.UUID, error) {
 	s.CatMap[cat.ID.String()] = cat
-	producerredis.GenerateEvent("cat", "Insert", cat, s.Redis.Client, s.Redis.StreamName)
+	producer.GenerateEvent("cat", "Insert", cat, s.Redis.Client, s.Redis.StreamName)
 	return s.Rep.InsertCat(c, cat)
 }
 
@@ -82,13 +82,13 @@ func (s *ServiceCat) GetAllCat(c context.Context) ([]*model.Cat, error) {
 // UpdateCat updating record about cat
 func (s *ServiceCat) UpdateCat(c context.Context, cat *model.Cat) error {
 	s.CatMap[cat.ID.String()] = cat
-	producerredis.GenerateEvent("cat", "Update", cat, s.Redis.Client, s.Redis.StreamName)
+	producer.GenerateEvent("cat", "Update", cat, s.Redis.Client, s.Redis.StreamName)
 	return s.Rep.UpdateCat(c, cat)
 }
 
 // DeleteCat record about cat
 func (s *ServiceCat) DeleteCat(c context.Context, id uuid.UUID) error {
 	delete(s.CatMap, id.String())
-	producerredis.GenerateEvent("cat", "Delete", model.Cat{ID: id}, s.Redis.Client, s.Redis.StreamName)
+	producer.GenerateEvent("cat", "Delete", model.Cat{ID: id}, s.Redis.Client, s.Redis.StreamName)
 	return s.Rep.DeleteCat(c, id)
 }

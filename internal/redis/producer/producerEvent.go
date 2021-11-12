@@ -1,5 +1,5 @@
 // Package producerredisredisredisredis for redis
-package producerredis
+package producer
 
 import (
 	"fmt"
