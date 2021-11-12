@@ -3,6 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+
+	"github.com/AndiVS/myapp3.0/internal/config"
+	"github.com/AndiVS/myapp3.0/internal/handler"
+	"github.com/AndiVS/myapp3.0/internal/middlewares"
+	"github.com/AndiVS/myapp3.0/internal/model"
+	"github.com/AndiVS/myapp3.0/internal/repository"
+	"github.com/AndiVS/myapp3.0/internal/server"
+	"github.com/AndiVS/myapp3.0/internal/service"
+	"github.com/AndiVS/myapp3.0/protocol"
 	"github.com/go-redis/redis/v7"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
@@ -11,14 +20,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
-	"myapp3.0/internal/config"
-	"myapp3.0/internal/handler"
-	"myapp3.0/internal/middlewares"
-	"myapp3.0/internal/model"
-	"myapp3.0/internal/repository"
-	"myapp3.0/internal/server"
-	"myapp3.0/internal/service"
-	"myapp3.0/protocol"
+
 	"net"
 	"os"
 	"time"
@@ -30,9 +32,10 @@ const secho = "echo"
 const sgrpc = "grpc"
 const rediska = "redis"
 const kafka = "kafka"
-const rabit = "rabit"
+const rabbit = "rabbit"
 
 func main() {
+
 	setLog()
 
 	cfg := config.Config{}
@@ -54,7 +57,7 @@ func main() {
 	switch cfg.System {
 	case mongodatabase:
 		mongoClient, mongoDatabase := getMongo(cfg.DBURL, cfg.DBName)
-		defer mongoClient.Disconnect(context.Background()) //nolint:errcheck,gocritic
+		defer mongoClient.Disconnect(context.Background()) //nolint:errorcheck,critic
 		recordRepository = repository.NewRepository(mongoDatabase)
 	case postgresdatabase:
 		pool := getPostgres(cfg.DBURL)
@@ -75,8 +78,7 @@ func main() {
 		cons = runRedis()
 	case kafka:
 
-	case rabit:
-
+	case rabbit:
 	}
 
 	recordService := service.NewServiceCat(recordRepository, cons)
@@ -147,8 +149,8 @@ func getMongo(url, dbname string) (*mongo.Client, *mongo.Database) {
 	return mongoClient, db
 }
 
-func runGRPCServer(recServer protocol.CatServiceServer, userServer protocol.UserServiceServer, serviceServer protocol.AuthServiceServer, cfg *config.Config, access, refresh *service.JWTManager) error {
-
+func runGRPCServer(recServer protocol.CatServiceServer, userServer protocol.UserServiceServer,
+	serviceServer protocol.AuthServiceServer, cfg *config.Config, access, refresh *service.JWTManager) error {
 	listener, err := net.Listen("tcp", cfg.Port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -161,7 +163,6 @@ func runGRPCServer(recServer protocol.CatServiceServer, userServer protocol.User
 	}
 
 	grpcServer := grpc.NewServer(serverOptions...)
-	//grpcServer := grpc.NewServer()
 	protocol.RegisterUserServiceServer(grpcServer, userServer)
 	protocol.RegisterCatServiceServer(grpcServer, recServer)
 	protocol.RegisterAuthServiceServer(grpcServer, serviceServer)
@@ -183,7 +184,8 @@ func runEchoServer(catHandler *handler.CatHandler, userHandler *handler.UserHand
 	return err
 }
 
-func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandler, authenticationHandler *handler.AuthenticationHandler, e *echo.Echo, cfg *config.Config) *echo.Echo {
+func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandler,
+	authenticationHandler *handler.AuthenticationHandler, e *echo.Echo, cfg *config.Config) *echo.Echo {
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		CustomTimeFormat: "2006-01-02 15:04:05",
 	}))
@@ -216,7 +218,7 @@ func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandl
 	user := e.Group("/user")
 
 	user.Use(middleware.JWTWithConfig(configuration))
-	//user.Use(middlewares.TokenRefresherMiddleware(authenticationHandler.Service.Access,authenticationHandler.Service.Refresh))
+	// user.Use(middlewares.TokenRefresherMiddleware(authenticationHandler.Service.Access,authenticationHandler.Service.Refresh))
 
 	user.GET("/records", catHandler.GetAllCat)
 	user.GET("/records/:_id", catHandler.GetCat)
@@ -240,5 +242,3 @@ func runRedis() *model.Redis {
 
 	return redisStruct
 }
-
-//test for key

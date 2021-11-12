@@ -21,12 +21,13 @@ package main
 
 import (
 	"context"
-	"log"
-	"myapp3.0/client/client"
-	"myapp3.0/protocol"
-	"time"
 
+	"github.com/AndiVS/myapp3.0/client/client"
+	"github.com/AndiVS/myapp3.0/protocol"
 	"google.golang.org/grpc"
+
+	"log"
+	"time"
 )
 
 const (
@@ -49,7 +50,6 @@ func authMethods() map[string]bool {
 }
 
 func main() {
-
 	cc1, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatal("cannot dial server: ", err)
@@ -90,7 +90,7 @@ func main() {
 
 	serch, err := c.SearchUser(ctx, &protocol.SearchUserRequest{Username: "admin"})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Panicf("could not greet: %v", err)
 	}
 	log.Printf("Greeting: %s", serch.GetUser())
 
@@ -133,5 +133,4 @@ func main() {
 		log.Printf("Greeting: %s", create.GetId())
 
 	*/
-
 }

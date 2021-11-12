@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/AndiVS/myapp3.0/internal/model"
+	"github.com/AndiVS/myapp3.0/internal/repository"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/google/uuid"
@@ -15,13 +18,11 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
-	"myapp3.0/internal/model"
-	"myapp3.0/internal/repository"
+
 	"net/http"
 	"net/http/httptest"
-	"os/exec"
-
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -141,12 +142,12 @@ func TestPostgresRepository(t *testing.T) {
 	rep := repository.NewRepository(poll)
 
 	// InsertC
-	ctx, _ := setup(http.MethodPost, &firstC)
+	ctx := setup(http.MethodPost, &firstC)
 	id, err := rep.InsertCat(ctx.Request().Context(), &firstC)
 	require.NoError(t, err)
 	firstC.ID = id
 
-	ctx, _ = setup(http.MethodPost, &secondC)
+	ctx = setup(http.MethodPost, &secondC)
 	id, err = rep.InsertCat(ctx.Request().Context(), &secondC)
 	require.NoError(t, err)
 	secondC.ID = id
@@ -165,7 +166,7 @@ func TestPostgresRepository(t *testing.T) {
 
 	// UpdateC
 	thirdC := model.Cat{ID: firstC.ID, Name: "thirdCat", Type: "thirdType"}
-	ctx, _ = setup(http.MethodPost, thirdC)
+	ctx = setup(http.MethodPost, thirdC)
 	err = rep.UpdateCat(ctx.Request().Context(), &thirdC)
 	require.NoError(t, err)
 	res, err = rep.SelectCat(ctx.Request().Context(), firstC.ID)
@@ -180,7 +181,7 @@ func TestPostgresRepository(t *testing.T) {
 	require.Error(t, err)
 }
 
-func setup(method string, body interface{}) (echo.Context, *httptest.ResponseRecorder) {
+func setup(method string, body interface{}) echo.Context {
 	jsonBody := ""
 	if body != nil {
 		jsonBody = mustEncodeJSON(body)
@@ -192,7 +193,7 @@ func setup(method string, body interface{}) (echo.Context, *httptest.ResponseRec
 	recorder := httptest.NewRecorder()
 	e := echo.New()
 	c := e.NewContext(request, recorder)
-	return c, recorder
+	return c
 }
 
 func mustEncodeJSON(data interface{}) string {

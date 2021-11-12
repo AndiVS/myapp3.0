@@ -1,10 +1,10 @@
-// Package middlewares
+// Package middlewares for JWT
 package middlewares
 
 import (
+	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
-	"myapp3.0/internal/model"
 
 	"net/http"
 )

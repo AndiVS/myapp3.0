@@ -1,25 +1,27 @@
+// Package server grpc
 package server
 
 import (
 	"context"
-	"myapp3.0/internal/model"
-	"myapp3.0/internal/service"
-	"myapp3.0/protocol"
+
+	"github.com/AndiVS/myapp3.0/internal/model"
+	"github.com/AndiVS/myapp3.0/internal/service"
+	"github.com/AndiVS/myapp3.0/protocol"
 )
 
+// UserServer for grpc
 type UserServer struct {
 	Service service.Users
 	protocol.UnimplementedUserServiceServer
 }
 
-//NewCatServer
+// NewUserServer  cat server
 func NewUserServer(Service service.Users) *UserServer {
 	return &UserServer{Service: Service}
 }
 
 // SearchUser provides cats
 func (s *UserServer) SearchUser(ctx context.Context, in *protocol.SearchUserRequest) (*protocol.SearchUserResponse, error) {
-	//ctx.Get("sdf")
 	r, err := s.Service.GetUser(ctx, in.Username)
 	if err != nil {
 		return nil, err

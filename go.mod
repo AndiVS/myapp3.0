@@ -1,23 +1,24 @@
-module myapp3.0
+module github.com/AndiVS/myapp3.0
 
 go 1.17
 
 require (
 	github.com/caarlos0/env/v6 v6.7.2
-	github.com/felipeagger/go-redis-streams v0.0.0-20200726205359-7afda5e362d3
 	github.com/go-redis/redis/v7 v7.4.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/labstack/echo/v4 v4.6.1
-	github.com/lib/pq v1.10.3
+	github.com/lib/pq v1.10.4
 	github.com/ory/dockertest/v3 v3.8.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
+	github.com/vmihailenco/msgpack/v4 v4.3.12
 	go.mongodb.org/mongo-driver v1.7.4
 	google.golang.org/grpc v1.42.0
 	google.golang.org/protobuf v1.27.1
+
 )
 
 require (
@@ -61,8 +62,7 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
-	github.com/vmihailenco/msgpack/v4 v4.2.1 // indirect
-	github.com/vmihailenco/tagparser v0.1.0 // indirect
+	github.com/vmihailenco/tagparser v0.1.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect

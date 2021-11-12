@@ -5,15 +5,14 @@ import (
 	"context"
 	"errors"
 
+	model "github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	log "github.com/sirupsen/logrus"
-	model "myapp3.0/internal/model"
 )
 
 // InsertCat function for inserting item from a table
 func (repos *Postgres) InsertCat(c context.Context, cat *model.Cat) (uuid.UUID, error) {
-
 	row := repos.pool.QueryRow(c,
 		"INSERT INTO cats (_id, name, type) VALUES ($1, $2, $3) RETURNING _id", cat.ID, cat.Name, cat.Type)
 

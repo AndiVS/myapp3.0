@@ -13,6 +13,7 @@ type Cat struct {
 	Type string    `param:"type" query:"type" header:"type" form:"type" json:"type" xml:"type" bson:"type"`
 }
 
+// MarshalBinary Marshal cat for redis stream
 func (cat Cat) MarshalBinary() ([]byte, error) {
 	return msgpack.Marshal(cat)
 }

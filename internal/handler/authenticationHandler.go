@@ -1,20 +1,23 @@
 package handler
 
 import (
+	"github.com/AndiVS/myapp3.0/internal/model"
+	"github.com/AndiVS/myapp3.0/internal/service"
+	"github.com/AndiVS/myapp3.0/protocol"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
-	"myapp3.0/internal/model"
-	"myapp3.0/internal/service"
-	"myapp3.0/protocol"
+
 	"net/http"
 	"time"
 )
 
+// AuthenticationHandler handler for aunt
 type AuthenticationHandler struct {
 	Service service.Authentication
 	protocol.UnimplementedUserServiceServer
 }
 
+// NewHandlerAuthentication create AuthenticationHandler
 func NewHandlerAuthentication(Service service.Authentication) *AuthenticationHandler {
 	return &AuthenticationHandler{Service: Service}
 }
@@ -56,6 +59,4 @@ func (h *AuthenticationHandler) SignIn(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{
 		"token": accessToken,
 	})
-
-	return err
 }
