@@ -6,8 +6,6 @@ import (
 	"github.com/AndiVS/myapp3.0/internal/broker"
 	"github.com/AndiVS/myapp3.0/internal/config"
 	"github.com/AndiVS/myapp3.0/internal/handler"
-	"github.com/AndiVS/myapp3.0/internal/middlewares"
-	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/AndiVS/myapp3.0/internal/repository"
 	"github.com/AndiVS/myapp3.0/internal/server"
 	"github.com/AndiVS/myapp3.0/internal/service"
@@ -193,13 +191,13 @@ func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandl
 		CustomTimeFormat: "2006-01-02 15:04:05",
 	}))
 	e.Use(middleware.Recover())
-	/*
-		e.POST("/records", catHandler.AddCat)
-		e.GET("/records/:_id", catHandler.GetCat)
-		e.GET("/records", catHandler.GetAllCat)
-		e.PUT("/records/:_id", catHandler.UpdateCat)
-		e.DELETE("/records/:_id", catHandler.DeleteCat)*/
-	e.POST("/auth/sign-up", authenticationHandler.SignUp)
+
+	e.POST("/records", catHandler.AddCat)
+	e.GET("/records/:_id", catHandler.GetCat)
+	e.GET("/records", catHandler.GetAllCat)
+	e.PUT("/records/:_id", catHandler.UpdateCat)
+	e.DELETE("/records/:_id", catHandler.DeleteCat)
+	/*e.POST("/auth/sign-up", authenticationHandler.SignUp)
 	e.POST("/auth/sign-in", authenticationHandler.SignIn)
 	admin := e.Group("/admin")
 
@@ -229,7 +227,7 @@ func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandl
 	// user.Use(middlewares.TokenRefresherMiddleware(authenticationHandler.Service.Access,authenticationHandler.Service.Refresh))
 
 	user.GET("/records", catHandler.GetAllCat)
-	user.GET("/records/:_id", catHandler.GetCat)
+	user.GET("/records/:_id", catHandler.GetCat)*/
 
 	return e
 }

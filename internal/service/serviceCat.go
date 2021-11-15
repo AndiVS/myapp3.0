@@ -60,7 +60,7 @@ func NewServiceCat(Rep interface{}, Broker interface{}) Cats {
 		serviceCat.Broker = Kafka
 	}
 
-	go serviceCat.Broker.ConsumeEvents(catMap)
+	go serviceCat.Broker.ConsumeEvents(Rep)
 
 	return &serviceCat
 }
@@ -69,7 +69,7 @@ func NewServiceCat(Rep interface{}, Broker interface{}) Cats {
 func (s *ServiceCat) AddCat(c context.Context, cat *model.Cat) (uuid.UUID, error) {
 	s.CatMap[cat.ID.String()] = cat
 	str := s.Broker.GetString()
-	s.Broker.ProduceEvent("cat", "Insert", cat, str)
+	s.Broker.ProduceEvent("cat", "Insert", *cat, str)
 	return s.Rep.InsertCat(c, cat)
 }
 
@@ -92,7 +92,7 @@ func (s *ServiceCat) GetAllCat(c context.Context) ([]*model.Cat, error) {
 func (s *ServiceCat) UpdateCat(c context.Context, cat *model.Cat) error {
 	str := s.Broker.GetString()
 	s.CatMap[cat.ID.String()] = cat
-	s.Broker.ProduceEvent("cat", "Update", cat, str)
+	s.Broker.ProduceEvent("cat", "Update", *cat, str)
 	return s.Rep.UpdateCat(c, cat)
 }
 

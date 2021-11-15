@@ -1,7 +1,8 @@
 package broker
 
 import (
-	"github.com/AndiVS/myapp3.0/internal/model"
+	"context"
+	"github.com/AndiVS/myapp3.0/internal/repository"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	log "github.com/sirupsen/logrus"
 )
@@ -9,9 +10,10 @@ import (
 func StartKafkaConsumer() *kafka.Consumer {
 
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "172.28.1.5",
-		"group.id":          "myGroup",
-		"auto.offset.reset": "earliest",
+		"bootstrap.servers":        "172.28.1.6:9092",
+		"group.id":                 "myGroup",
+		"auto.offset.reset":        "EARLIEST",
+		"go.events.channel.enable": true,
 	})
 	if err != nil {
 		log.Panic("Kafka consumers err %v", err)
@@ -20,30 +22,37 @@ func StartKafkaConsumer() *kafka.Consumer {
 	return c
 }
 
-func (k *Kafka) ConsumeEvents(catsMap map[string]*model.Cat) {
-	err := k.Consumer.SubscribeTopics([]string{k.Topic}, nil)
+func (k *Kafka) ConsumeEvents(catsCont interface{}) {
+	//err := k.Consumer.SubscribeTopics([]string{k.Topic}, nil)
+	err := k.Consumer.Subscribe(k.Topic, nil)
 	if err != nil {
-		log.Printf("err in consumer subscribeTopic %v", err)
+		log.Println("Unable to subscribe to topic " + k.Topic + " due to error - " + err.Error())
+	} else {
+		log.Println("subscribed to topic ", k.Topic)
 	}
 
 	for {
-		msg, err := k.Consumer.ReadMessage(-1)
-		if err == nil {
-			processMessage(msg, catsMap)
+		log.Println("waiting for event...")
+		kafkaEvent := <-k.Consumer.Events()
+		if kafkaEvent != nil {
+			switch event := kafkaEvent.(type) {
+			case *kafka.Message:
+				processMessage(event, catsCont)
+			case kafka.Error:
+				log.Println("Consumer error ", event.String())
+			case kafka.PartitionEOF:
+				log.Println(kafkaEvent)
+			default:
+				log.Println(kafkaEvent)
+			}
 		} else {
-			// The client will automatically try to recover from all errors.
-			log.Printf("Consumer error: %v (%v)\n", err, msg)
+			log.Println("Event was null")
 		}
 	}
 
-	/*	err = k.Consumer.Close()
-		if err != nil {
-			log.Printf("err in consumer close %v", err)
-		}*/
-
 }
 
-func processMessage(msg *kafka.Message, catsMap map[string]*model.Cat) {
+func processMessage(msg *kafka.Message, catsCont interface{}) {
 	msgKafka := new(MessageKafka)
 	err := msgKafka.UnmarshalBinary(msg.Value)
 	if err != nil {
@@ -54,13 +63,13 @@ func processMessage(msg *kafka.Message, catsMap map[string]*model.Cat) {
 	case "cat":
 		switch msgKafka.Command {
 		case "Insert":
-			catsMap[msgKafka.Cat.ID.String()] = &msgKafka.Cat
+			catsCont.(*repository.Postgres).InsertCat(context.Background(), &msgKafka.Cat)
 			log.Printf("cat with id %v successfully inserted ", msgKafka.Cat.ID)
 		case "Delete":
-			delete(catsMap, msgKafka.Cat.ID.String())
+			catsCont.(*repository.Postgres).DeleteCat(context.Background(), msgKafka.Cat.ID)
 			log.Printf("cat with id %v deleted successfully ", msgKafka.Cat.ID)
 		case "Update":
-			catsMap[msgKafka.Cat.ID.String()] = &msgKafka.Cat
+			catsCont.(*repository.Postgres).UpdateCat(context.Background(), &msgKafka.Cat)
 			log.Printf("cat with id %v updated successfully ", msgKafka.Cat.ID)
 		}
 	}

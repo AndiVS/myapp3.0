@@ -9,7 +9,7 @@ import (
 
 type Broker interface {
 	ProduceEvent(destination, command string, data interface{}, topic string)
-	ConsumeEvents(catsMap map[string]*model.Cat)
+	ConsumeEvents(interface{})
 	GetString() string
 }
 
@@ -37,6 +37,7 @@ type Kafka struct {
 
 // NewKafka client for kafka
 func NewKafka(consumer *kafka.Consumer, producer *kafka.Producer, topic string) Broker {
+
 	return &Kafka{Consumer: consumer, Producer: producer, Topic: topic}
 }
 

@@ -7,7 +7,7 @@ import (
 )
 
 // ConsumeEvents consume events
-func (r *Redis) ConsumeEvents(catsMap map[string]*model.Cat) {
+func (r *Redis) ConsumeEvents(catsCont interface{}) {
 	for {
 		streams, err := r.Client.XRead(&redis.XReadArgs{
 			Streams: []string{r.StreamName, "$"},
@@ -17,7 +17,7 @@ func (r *Redis) ConsumeEvents(catsMap map[string]*model.Cat) {
 		}
 
 		stream := streams[0].Messages[0]
-		processStream(stream, catsMap)
+		processStream(stream, catsCont.(map[string]*model.Cat))
 	}
 }
 
