@@ -1,13 +1,14 @@
 package broker
 
 import (
+	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	log "github.com/sirupsen/logrus"
 )
 
 func StartKafkaProducer() *kafka.Producer {
 
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "172.28.1.6:9092"})
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "172.28.1.6"})
 	if err != nil {
 		log.Panic("Kafka producers err %v", err)
 	}
@@ -16,7 +17,7 @@ func StartKafkaProducer() *kafka.Producer {
 }
 
 func (k *Kafka) ProduceEvent(destination, command string, data interface{}, topic string) {
-	/*msgKafka := MessageKafka{
+	msgKafka := MessageKafka{
 		Destination: destination,
 		Command:     command,
 		Cat:         data.(model.Cat),
@@ -30,29 +31,32 @@ func (k *Kafka) ProduceEvent(destination, command string, data interface{}, topi
 	err = produceKafkaMsg(msg, k.Producer, topic)
 	if err != nil {
 		log.Printf("err in produceKafkaMsg %v", err)
-	}*/
+	}
 }
 
 func produceKafkaMsg(value []byte, p *kafka.Producer, topic string) error {
 
+	delivery_chan := make(chan kafka.Event, 10000)
 	err := p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:          value,
-	}, nil)
-
+		Value:          value},
+		delivery_chan,
+	)
 	if err != nil {
 		log.Println("unable to enqueue message ", value)
 	}
 
-	event := <-p.Events()
-	message := event.(*kafka.Message)
-	if message.TopicPartition.Error != nil {
-		log.Println("Delivery failed due to error ", message.TopicPartition.Error)
-	} else {
-		log.Println("Delivered message to offset " + message.TopicPartition.Offset.String() + " in partition " + message.TopicPartition.String())
-	}
-
-	p.Flush(15 * 1000)
-
+	go func() {
+		e := <-delivery_chan
+		m := e.(*kafka.Message)
+		if m.TopicPartition.Error != nil {
+			log.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
+		} else {
+			log.Printf("Delivered message to topic %s [%d] at offset %v\n",
+				*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+		}
+		close(delivery_chan)
+	}()
 	return err
+
 }

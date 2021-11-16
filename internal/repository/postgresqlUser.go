@@ -10,7 +10,7 @@ import (
 
 // InsertUser function for inserting item from a table
 func (repos *Postgres) InsertUser(c context.Context, user *model.User) error {
-	row := repos.pool.QueryRow(c,
+	row := repos.Pool.QueryRow(c,
 		"INSERT INTO users (username, password, is_admin) VALUES ($1, $2, $3) RETURNING username", user.Username, user.Password, false)
 
 	err := row.Scan(&user.Username)
@@ -25,7 +25,7 @@ func (repos *Postgres) InsertUser(c context.Context, user *model.User) error {
 // SelectUser function for selecting item from a table
 func (repos *Postgres) SelectUser(c context.Context, username string) (*model.User, error) {
 	var user model.User
-	row := repos.pool.QueryRow(c,
+	row := repos.Pool.QueryRow(c,
 		"SELECT username, password, is_admin  FROM users WHERE username = $1", username)
 
 	err := row.Scan(&user.Username, &user.Password, &user.IsAdmin)
@@ -43,7 +43,7 @@ func (repos *Postgres) SelectUser(c context.Context, username string) (*model.Us
 func (repos *Postgres) SelectAllUser(c context.Context) ([]*model.User, error) {
 	var user []*model.User
 
-	row, err := repos.pool.Query(c,
+	row, err := repos.Pool.Query(c,
 		"SELECT username, password, is_admin  FROM users")
 
 	for row.Next() {
@@ -60,7 +60,7 @@ func (repos *Postgres) SelectAllUser(c context.Context) ([]*model.User, error) {
 
 // UpdateUser function for updating item from a table
 func (repos *Postgres) UpdateUser(c context.Context, username string, isAdmin bool) error {
-	_, err := repos.pool.Exec(c,
+	_, err := repos.Pool.Exec(c,
 		"UPDATE users SET is_admin = $2 WHERE username = $1", username, isAdmin)
 	if err != nil {
 		log.Errorf("Failed updating data in db: %s\n", err)
@@ -72,7 +72,7 @@ func (repos *Postgres) UpdateUser(c context.Context, username string, isAdmin bo
 
 // DeleteUser function for deleting item from a table
 func (repos *Postgres) DeleteUser(c context.Context, username string) error {
-	ct, err := repos.pool.Exec(c, "DELETE FROM users WHERE username = $1", username)
+	ct, err := repos.Pool.Exec(c, "DELETE FROM users WHERE username = $1", username)
 
 	if err != nil {
 		return err

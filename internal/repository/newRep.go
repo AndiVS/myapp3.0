@@ -17,12 +17,12 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
-// Postgres struct for pool
+// Postgres struct for Pool
 type Postgres struct {
-	pool *pgxpool.Pool
+	Pool *pgxpool.Pool
 }
 
-// Mongo struct for pool
+// Mongo struct for Pool
 type Mongo struct {
 	collectionCats  *mongo.Collection
 	collectionUsers *mongo.Collection
@@ -35,7 +35,7 @@ func NewRepository(db interface{}) Cats {
 
 	switch reflect.TypeOf(db) {
 	case reflect.TypeOf(pool):
-		return &Postgres{pool: db.(*pgxpool.Pool)}
+		return &Postgres{Pool: db.(*pgxpool.Pool)}
 	case reflect.TypeOf(mongoDB):
 		return &Mongo{
 			collectionCats:  db.(*mongo.Database).Collection("cats"),

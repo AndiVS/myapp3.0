@@ -13,7 +13,7 @@ import (
 
 // InsertCat function for inserting item from a table
 func (repos *Postgres) InsertCat(c context.Context, cat *model.Cat) (uuid.UUID, error) {
-	row := repos.pool.QueryRow(c,
+	row := repos.Pool.QueryRow(c,
 		"INSERT INTO cats (_id, name, type) VALUES ($1, $2, $3) RETURNING _id", cat.ID, cat.Name, cat.Type)
 
 	err := row.Scan(&cat.ID)
@@ -28,7 +28,7 @@ func (repos *Postgres) InsertCat(c context.Context, cat *model.Cat) (uuid.UUID, 
 // SelectCat function for selecting item from a table
 func (repos *Postgres) SelectCat(c context.Context, id uuid.UUID) (*model.Cat, error) {
 	var cat model.Cat
-	row := repos.pool.QueryRow(c,
+	row := repos.Pool.QueryRow(c,
 		"SELECT _id, name, type FROM cats WHERE _id = $1", id)
 
 	err := row.Scan(&cat.ID, &cat.Name, &cat.Type)
@@ -48,7 +48,7 @@ func (repos *Postgres) SelectCat(c context.Context, id uuid.UUID) (*model.Cat, e
 func (repos *Postgres) SelectAllCat(c context.Context) ([]*model.Cat, error) {
 	var cats []*model.Cat
 
-	row, err := repos.pool.Query(c,
+	row, err := repos.Pool.Query(c,
 		"SELECT _id, name, type  FROM cats")
 
 	for row.Next() {
@@ -65,7 +65,7 @@ func (repos *Postgres) SelectAllCat(c context.Context) ([]*model.Cat, error) {
 
 // UpdateCat function for updating item from a table
 func (repos *Postgres) UpdateCat(c context.Context, cat *model.Cat) error {
-	_, err := repos.pool.Exec(c,
+	_, err := repos.Pool.Exec(c,
 		"UPDATE cats SET name = $2, type = $3 WHERE _id = $1", cat.ID, cat.Name, cat.Type)
 
 	if err != nil {
@@ -78,7 +78,7 @@ func (repos *Postgres) UpdateCat(c context.Context, cat *model.Cat) error {
 
 // DeleteCat function for deleting item from a table
 func (repos *Postgres) DeleteCat(c context.Context, id uuid.UUID) error {
-	_, err := repos.pool.Exec(c, "DELETE FROM cats WHERE _id = $1", id)
+	_, err := repos.Pool.Exec(c, "DELETE FROM cats WHERE _id = $1", id)
 
 	if err != nil {
 		return err
