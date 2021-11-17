@@ -16,8 +16,8 @@ func StartKafkaProducer() *kafka.Producer {
 	return p
 }
 
-func (k *Kafka) ProduceEvent(destination, command string, data interface{}, topic string) {
-	msgKafka := MessageKafka{
+func (k *Kafka) ProduceEvent(destination, command string, data interface{}) {
+	msgKafka := MessageForBrokers{
 		Destination: destination,
 		Command:     command,
 		Cat:         data.(model.Cat),
@@ -28,7 +28,7 @@ func (k *Kafka) ProduceEvent(destination, command string, data interface{}, topi
 		log.Printf("kafka marshaling err %v", err)
 	}
 
-	err = produceKafkaMsg(msg, k.Producer, topic)
+	err = produceKafkaMsg(msg, k.Producer, k.Topic)
 	if err != nil {
 		log.Printf("err in produceKafkaMsg %v", err)
 	}

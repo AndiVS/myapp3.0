@@ -26,27 +26,6 @@ func processStream(stream redis.XMessage, catsMap map[string]*model.Cat) {
 	command := stream.Values["command"].(string)
 
 	switch destination {
-	/*	case "user":
-		user := new(model.User)
-		err := msgpack.Unmarshal([]byte(stream.Values["data"].(string)),user)
-		if err!= nil {}
-
-		switch command {
-		case "Update":
-			err = r.ServiceUsers.UpdateUser(context.Background(), user.Username, user.IsAdmin)
-			if err != nil {
-				log.Printf("err %v", err )
-			}else {
-				log.Printf("user with username %v  successfully ", user.Username)
-			}
-		case "Delete":
-			err = r.ServiceUsers.DeleteUser(context.Background(), user.Username)
-			if err != nil {
-				log.Printf("err %v", err )
-			}else {
-				log.Printf("user with username %v deleted successfully ", user.Username)
-			}
-		}*/
 	case "cat":
 		cat := new(model.Cat)
 

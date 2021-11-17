@@ -9,12 +9,12 @@ import (
 )
 
 // ProduceEvent for redis
-func (r *Redis) ProduceEvent(destination, command string, data interface{}, StreamName string) {
+func (r *Redis) ProduceEvent(destination, command string, data interface{}) {
 	newID, err := produceRedisMsg(map[string]interface{}{
 		"destination": destination,
 		"command":     command,
 		"data":        data,
-	}, r.Client, StreamName)
+	}, r.Client, r.StreamName)
 
 	checkError(err, command, destination, newID)
 }

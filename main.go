@@ -35,7 +35,6 @@ const kafka = "kafka"
 const rabbit = "rabbit"
 
 func main() {
-
 	setLog()
 
 	cfg := config.Config{}
@@ -81,6 +80,8 @@ func main() {
 		cons := runKafka()
 		recordService = service.NewServiceCat(recordRepository, cons)
 	case rabbit:
+		cons := runRabbitMQ()
+		recordService = service.NewServiceCat(recordRepository, cons)
 	}
 
 	//recordService := service.NewServiceCat(recordRepository, cons)
@@ -253,9 +254,15 @@ func runRedis() broker.Broker {
 
 func runKafka() broker.Broker {
 	consumer := broker.StartKafkaConsumer()
-	producer := broker.StartKafkaProducer()
+	//producer := broker.StartKafkaProducer()
 
-	kafkaStruct := broker.NewKafka(consumer, producer, "Topic")
-	//kafkaStruct := broker.NewKafka(consumer, nil, "Topic")
+	//kafkaStruct := broker.NewKafka(consumer, producer, "Topic")
+	kafkaStruct := broker.NewKafka(consumer, nil, "Topic")
 	return kafkaStruct
+}
+
+func runRabbitMQ() broker.Broker {
+	rabbitStruct := broker.NewRabbitMQ("Que")
+
+	return rabbitStruct
 }

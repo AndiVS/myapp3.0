@@ -6,13 +6,12 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/jackc/pgx/v4"
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 func StartKafkaConsumer() *kafka.Consumer {
 
-	group := os.Getenv("GROP")
-	//group := "gr1"
+	//group := os.Getenv("GROP")
+	group := "gr1"
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": "172.28.1.6",
 		"group.id":          group,
@@ -33,6 +32,7 @@ func (k *Kafka) ConsumeEvents(catsCont interface{}) {
 	} else {
 		log.Println("subscribed to topic ", k.Topic)
 	}
+
 	/*
 		for {
 			log.Println("waiting for event...")
@@ -104,8 +104,8 @@ func (k *Kafka) ConsumeEvents(catsCont interface{}) {
 	}
 }
 
-func processMessage(msg *kafka.Message, catsCont interface{}) {
-	msgKafka := new(MessageKafka)
+func processMessage(msg *kafka.Message, catsCont *pgx.Batch) {
+	msgKafka := new(MessageForBrokers)
 	err := msgKafka.UnmarshalBinary(msg.Value)
 	if err != nil {
 		log.Printf("err processmessasge kafka unmarhaling  %v", err)
@@ -115,15 +115,15 @@ func processMessage(msg *kafka.Message, catsCont interface{}) {
 	case "cat":
 		switch msgKafka.Command {
 		case "Insert":
-			catsCont.(*pgx.Batch).Queue(
+			catsCont.Queue(
 				"INSERT INTO cats (_id, name, type) VALUES ($1, $2, $3) RETURNING _id",
 				msgKafka.Cat.ID, msgKafka.Cat.Name, msgKafka.Cat.Type)
 			log.Printf("cat with id %v successfully inserted ", msgKafka.Cat.ID)
 		case "Delete":
-			catsCont.(*pgx.Batch).Queue("DELETE FROM cats WHERE _id = $1", msgKafka.Cat.ID)
+			catsCont.Queue("DELETE FROM cats WHERE _id = $1", msgKafka.Cat.ID)
 			log.Printf("cat with id %v deleted successfully ", msgKafka.Cat.ID)
 		case "Update":
-			catsCont.(*pgx.Batch).Queue("UPDATE cats SET name = $2, type = $3 WHERE _id = $1",
+			catsCont.Queue("UPDATE cats SET name = $2, type = $3 WHERE _id = $1",
 				msgKafka.Cat.ID, msgKafka.Cat.Name, msgKafka.Cat.Type)
 			log.Printf("cat with id %v updated successfully ", msgKafka.Cat.ID)
 		}

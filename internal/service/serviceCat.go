@@ -50,6 +50,7 @@ func NewServiceCat(Rep interface{}, Broker interface{}) Cats {
 
 	var red *broker.Redis
 	var kaf *broker.Kafka
+	var reb *broker.RabbitMQ
 
 	switch reflect.TypeOf(Broker) {
 	case reflect.TypeOf(red):
@@ -58,6 +59,9 @@ func NewServiceCat(Rep interface{}, Broker interface{}) Cats {
 	case reflect.TypeOf(kaf):
 		Kafka := Broker.(*broker.Kafka)
 		serviceCat.Broker = Kafka
+	case reflect.TypeOf(reb):
+		Rabbit := Broker.(*broker.RabbitMQ)
+		serviceCat.Broker = Rabbit
 	}
 
 	go serviceCat.Broker.ConsumeEvents(Rep)
@@ -68,8 +72,7 @@ func NewServiceCat(Rep interface{}, Broker interface{}) Cats {
 // AddCat record about cat
 func (s *ServiceCat) AddCat(c context.Context, cat *model.Cat) (uuid.UUID, error) {
 	s.CatMap[cat.ID.String()] = cat
-	str := s.Broker.GetString()
-	s.Broker.ProduceEvent("cat", "Insert", *cat, str)
+	s.Broker.ProduceEvent("cat", "Insert", *cat)
 	return s.Rep.InsertCat(c, cat)
 }
 
@@ -90,16 +93,14 @@ func (s *ServiceCat) GetAllCat(c context.Context) ([]*model.Cat, error) {
 
 // UpdateCat updating record about cat
 func (s *ServiceCat) UpdateCat(c context.Context, cat *model.Cat) error {
-	str := s.Broker.GetString()
 	s.CatMap[cat.ID.String()] = cat
-	s.Broker.ProduceEvent("cat", "Update", *cat, str)
+	s.Broker.ProduceEvent("cat", "Update", *cat)
 	return s.Rep.UpdateCat(c, cat)
 }
 
 // DeleteCat record about cat
 func (s *ServiceCat) DeleteCat(c context.Context, id uuid.UUID) error {
 	delete(s.CatMap, id.String())
-	str := s.Broker.GetString()
-	s.Broker.ProduceEvent("cat", "Delete", &model.Cat{ID: id}, str)
+	s.Broker.ProduceEvent("cat", "Delete", &model.Cat{ID: id})
 	return s.Rep.DeleteCat(c, id)
 }
