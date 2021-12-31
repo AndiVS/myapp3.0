@@ -11,7 +11,7 @@ import (
 // AuthenticationServer for grcp
 type AuthenticationServer struct {
 	Service service.Authentication
-	protocol.UnimplementedAuthServiceServer
+	*protocol.UnimplementedAuthServiceServer
 }
 
 // NewAuthenticationServer returns a new auth server

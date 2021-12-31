@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// TokenRefresherMiddleware refresh access token
 func TokenRefresherMiddleware(access, refresh *service.JWTManager) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -34,7 +35,7 @@ func TokenRefresherMiddleware(access, refresh *service.JWTManager) echo.Middlewa
 						}
 					}
 
-					if tkn != nil && tkn.Valid {
+					if tkn.Valid {
 						// If everything is good, update tokens.
 						_, _, _ = service.GenerateTokens(&model.User{
 							Username: claims.Username,

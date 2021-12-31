@@ -1,9 +1,9 @@
-// Package producerredisredisredisredis for redis
+// Package broker for redis
 package broker
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/go-redis/redis/v7"
 )
@@ -20,7 +20,6 @@ func (r *Redis) ProduceEvent(destination, command string, data interface{}) {
 }
 
 func produceRedisMsg(values map[string]interface{}, client *redis.Client, StreamName string) (string, error) {
-
 	str, err := client.XAdd(&redis.XAddArgs{
 		Stream: StreamName,
 		Values: values,

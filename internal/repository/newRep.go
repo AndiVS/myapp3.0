@@ -8,8 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	"reflect"
 )
 
 var (
@@ -29,14 +27,11 @@ type Mongo struct {
 }
 
 // NewRepository set new repository for mongo and postgres
-func NewRepository(db interface{}) Cats {
-	var pool *pgxpool.Pool
-	var mongoDB *mongo.Database
-
-	switch reflect.TypeOf(db) {
-	case reflect.TypeOf(pool):
+func NewRepository(db interface{}, dbType string) Cats {
+	switch dbType {
+	case "postgres":
 		return &Postgres{Pool: db.(*pgxpool.Pool)}
-	case reflect.TypeOf(mongoDB):
+	case "mongodb":
 		return &Mongo{
 			collectionCats:  db.(*mongo.Database).Collection("cats"),
 			collectionUsers: db.(*mongo.Database).Collection("users"),

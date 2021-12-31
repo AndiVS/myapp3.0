@@ -24,7 +24,7 @@ func NewJWTManager(secretKey []byte, tokenDuration time.Duration) *JWTManager {
 }
 
 // GenerateTokens func for token generation
-func GenerateTokens(user *model.User, access, refresh *JWTManager) (string, string, error) {
+func GenerateTokens(user *model.User, access, refresh *JWTManager) (acToken, refToken string, err error) {
 	accessToken, err := GenerateToken(user, access)
 	if err != nil {
 		return "", "", err

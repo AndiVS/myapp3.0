@@ -4,42 +4,24 @@ import (
 	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/google/uuid"
 	"github.com/streadway/amqp"
+
 	"log"
 )
 
-func (r *RabbitMQ) ProduceEvent(destination, command string, data interface{}) {
+// StartCh start chen for rabbit
+func (r *RabbitMQ) StartCh() {
 	ch, err := r.Connection.Channel()
 	if err != nil {
 		log.Printf("err in %v", err)
 	}
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare(
-		r.QName, // name
-		false,   // durable
-		false,   // delete when unused
-		true,    // exclusive
-		false,   // noWait
-		nil,     // arguments
-	)
 	if err != nil {
 		log.Printf("err in %v", err)
 	}
+	r.Channel = ch
+}
 
-	/*msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
-	)
-	if err != nil {
-		log.Printf("err in %v", err)
-	}*/
-
-	corrId := uuid.New().String()
+// ProduceEvent func for producing events
+func (r *RabbitMQ) ProduceEvent(destination, command string, data interface{}) {
 	msgRabbit := MessageForBrokers{
 		Destination: destination,
 		Command:     command,
@@ -50,30 +32,23 @@ func (r *RabbitMQ) ProduceEvent(destination, command string, data interface{}) {
 	if err != nil {
 		log.Printf("kafka marshaling err %v", err)
 	}
+	corrID := uuid.New().String()
 
-	err = ch.Publish(
-		"",          // exchange
-		"rpc_queue", // routing key
-		false,       // mandatory
-		false,       // immediate
+	produceRabbitMsg(ms, r.Channel, r.QName, corrID)
+}
+
+func produceRabbitMsg(value []byte, ch *amqp.Channel, qname, corrID string) {
+	err := ch.Publish(
+		"",
+		qname,
+		false,
+		false,
 		amqp.Publishing{
 			ContentType:   "text/plain",
-			CorrelationId: corrId,
-			ReplyTo:       q.Name,
-			Body:          ms,
+			CorrelationId: corrID,
+			Body:          value,
 		})
 	if err != nil {
 		log.Printf("err in %v", err)
 	}
-
-	/*for d := range msgs {
-		if corrId == d.CorrelationId {
-			res, err = strconv.Atoi(string(d.Body))
-			if err != nil {
-				log.Printf("err in %v", err)
-			}
-			break
-		}
-	}*/
-
 }

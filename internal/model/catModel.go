@@ -3,6 +3,7 @@ package model
 
 import (
 	"encoding/json"
+
 	"github.com/google/uuid"
 )
 

@@ -3,12 +3,11 @@ package service
 
 import (
 	"context"
+
 	"github.com/AndiVS/myapp3.0/internal/broker"
 	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/AndiVS/myapp3.0/internal/repository"
 	"github.com/google/uuid"
-
-	"reflect"
 )
 
 // Cats interface for mocks
@@ -20,24 +19,21 @@ type Cats interface {
 	DeleteCat(c context.Context, id uuid.UUID) error
 }
 
-// ServiceCat struct for rep
-type ServiceCat struct {
+// CatService struct for rep
+type CatService struct {
 	Rep    repository.Cats
 	CatMap map[string]*model.Cat
 	Broker broker.Broker
 }
 
 // NewServiceCat used for setting services
-func NewServiceCat(Rep interface{}, Broker interface{}) Cats {
-	serviceCat := ServiceCat{}
+func NewServiceCat(Rep, Broker interface{}, dbType, brokerType string) Cats {
+	serviceCat := CatService{}
 
-	var mongo *repository.Mongo
-	var postgres *repository.Postgres
-
-	switch reflect.TypeOf(Rep) {
-	case reflect.TypeOf(mongo):
+	switch dbType {
+	case "mongodb":
 		serviceCat.Rep = Rep.(*repository.Mongo)
-	case reflect.TypeOf(postgres):
+	case "postgres":
 		serviceCat.Rep = Rep.(*repository.Postgres)
 	}
 
@@ -48,18 +44,14 @@ func NewServiceCat(Rep interface{}, Broker interface{}) Cats {
 	}
 	serviceCat.CatMap = catMap
 
-	var red *broker.Redis
-	var kaf *broker.Kafka
-	var reb *broker.RabbitMQ
-
-	switch reflect.TypeOf(Broker) {
-	case reflect.TypeOf(red):
+	switch brokerType {
+	case "redis":
 		Redis := Broker.(*broker.Redis)
 		serviceCat.Broker = Redis
-	case reflect.TypeOf(kaf):
+	case "kafka":
 		Kafka := Broker.(*broker.Kafka)
 		serviceCat.Broker = Kafka
-	case reflect.TypeOf(reb):
+	case "rabbit":
 		Rabbit := Broker.(*broker.RabbitMQ)
 		serviceCat.Broker = Rabbit
 	}
@@ -70,36 +62,35 @@ func NewServiceCat(Rep interface{}, Broker interface{}) Cats {
 }
 
 // AddCat record about cat
-func (s *ServiceCat) AddCat(c context.Context, cat *model.Cat) (uuid.UUID, error) {
+func (s *CatService) AddCat(c context.Context, cat *model.Cat) (uuid.UUID, error) {
 	s.CatMap[cat.ID.String()] = cat
 	s.Broker.ProduceEvent("cat", "Insert", *cat)
 	return s.Rep.InsertCat(c, cat)
 }
 
 // GetCat provides cat
-func (s *ServiceCat) GetCat(c context.Context, id uuid.UUID) (*model.Cat, error) {
+func (s *CatService) GetCat(c context.Context, id uuid.UUID) (*model.Cat, error) {
 	val, ok := s.CatMap[id.String()]
 	if ok {
 		return val, nil
-	} else {
-		return s.Rep.SelectCat(c, id)
 	}
+	return s.Rep.SelectCat(c, id)
 }
 
 // GetAllCat provides all cats
-func (s *ServiceCat) GetAllCat(c context.Context) ([]*model.Cat, error) {
+func (s *CatService) GetAllCat(c context.Context) ([]*model.Cat, error) {
 	return s.Rep.SelectAllCat(c)
 }
 
 // UpdateCat updating record about cat
-func (s *ServiceCat) UpdateCat(c context.Context, cat *model.Cat) error {
+func (s *CatService) UpdateCat(c context.Context, cat *model.Cat) error {
 	s.CatMap[cat.ID.String()] = cat
 	s.Broker.ProduceEvent("cat", "Update", *cat)
 	return s.Rep.UpdateCat(c, cat)
 }
 
 // DeleteCat record about cat
-func (s *ServiceCat) DeleteCat(c context.Context, id uuid.UUID) error {
+func (s *CatService) DeleteCat(c context.Context, id uuid.UUID) error {
 	delete(s.CatMap, id.String())
 	s.Broker.ProduceEvent("cat", "Delete", &model.Cat{ID: id})
 	return s.Rep.DeleteCat(c, id)

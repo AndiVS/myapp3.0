@@ -6,16 +6,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// StartKafkaProducer start kafka producer
 func StartKafkaProducer() *kafka.Producer {
-
 	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "172.28.1.6"})
 	if err != nil {
-		log.Panic("Kafka producers err %v", err)
+		log.Printf("Kafka producers err %v", err)
 	}
 
 	return p
 }
 
+// ProduceEvent func for producing events of kafka
 func (k *Kafka) ProduceEvent(destination, command string, data interface{}) {
 	msgKafka := MessageForBrokers{
 		Destination: destination,
@@ -35,19 +36,18 @@ func (k *Kafka) ProduceEvent(destination, command string, data interface{}) {
 }
 
 func produceKafkaMsg(value []byte, p *kafka.Producer, topic string) error {
-
-	delivery_chan := make(chan kafka.Event, 10000)
+	deliveryChan := make(chan kafka.Event, 10000)
 	err := p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          value},
-		delivery_chan,
+		deliveryChan,
 	)
 	if err != nil {
 		log.Println("unable to enqueue message ", value)
 	}
 
 	go func() {
-		e := <-delivery_chan
+		e := <-deliveryChan
 		m := e.(*kafka.Message)
 		if m.TopicPartition.Error != nil {
 			log.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
@@ -55,8 +55,7 @@ func produceKafkaMsg(value []byte, p *kafka.Producer, topic string) error {
 			log.Printf("Delivered message to topic %s [%d] at offset %v\n",
 				*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
 		}
-		close(delivery_chan)
+		close(deliveryChan)
 	}()
 	return err
-
 }

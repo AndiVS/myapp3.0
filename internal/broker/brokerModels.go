@@ -2,17 +2,25 @@ package broker
 
 import (
 	"encoding/json"
+
 	"github.com/AndiVS/myapp3.0/internal/model"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/go-redis/redis/v7"
 	"github.com/streadway/amqp"
+
 	"log"
 )
 
+const userString = "user"
+const catString = "cat"
+const updateCommand = "Update"
+const deleteCommand = "Delete"
+const insertCommand = "Insert"
+
+// Broker interface for brokers
 type Broker interface {
 	ProduceEvent(destination, command string, data interface{})
 	ConsumeEvents(interface{})
-	GetString() string
 }
 
 // Redis struct for redis
@@ -26,10 +34,6 @@ func NewRedisClient(client *redis.Client, streamName string) Broker {
 	return &Redis{Client: client, StreamName: streamName}
 }
 
-func (r *Redis) GetString() string {
-	return r.StreamName
-}
-
 // Kafka struct for kafka
 type Kafka struct {
 	Consumer *kafka.Consumer
@@ -39,14 +43,10 @@ type Kafka struct {
 
 // NewKafka client for kafka
 func NewKafka(consumer *kafka.Consumer, producer *kafka.Producer, topic string) Broker {
-
 	return &Kafka{Consumer: consumer, Producer: producer, Topic: topic}
 }
 
-func (k *Kafka) GetString() string {
-	return k.Topic
-}
-
+// MessageForBrokers message that send kafka and rabbit
 type MessageForBrokers struct {
 	Destination string    `param:"destination" query:"destination" header:"destination" form:"destination" json:"destination" xml:"destination" bson:"destination"`
 	Command     string    `param:"command" query:"command" header:"command" form:"command" json:"command" xml:"command" bson:"command"`
@@ -63,18 +63,17 @@ func (msg *MessageForBrokers) UnmarshalBinary(data []byte) error {
 	return json.Unmarshal(data, msg)
 }
 
+// RabbitMQ struct for rabbitmq
 type RabbitMQ struct {
 	Connection *amqp.Connection
 	QName      string
-}
-
-func (r *RabbitMQ) GetString() string {
-	return r.QName
+	Channel    *amqp.Channel
 }
 
 // NewRabbitMQ client for kafka
 func NewRabbitMQ(qname string) Broker {
-	conn, err := amqp.Dial("amqp://andeisaldyun:e3cr3t@172.28.1.7:5672/")
+	// conn, err := amqp.Dial("amqp://andeisaldyun:e3cr3t@172.28.1.7:5672/")
+	conn, err := amqp.Dial("amqp://andeisaldyun:e3cr3t@rabbitmq:5672/")
 	if err != nil {
 		log.Printf(" rabbit con err %v", err)
 	}

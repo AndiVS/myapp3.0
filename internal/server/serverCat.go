@@ -12,7 +12,7 @@ import (
 // CatServer struct for grcp
 type CatServer struct {
 	Service service.Cats
-	protocol.UnimplementedCatServiceServer
+	*protocol.UnimplementedCatServiceServer
 }
 
 // NewCatServer as

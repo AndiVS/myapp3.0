@@ -55,7 +55,7 @@ func (s *AuthenticationService) SignUp(c context.Context, user *model.User) erro
 }
 
 // SignIn generate token
-func (s *AuthenticationService) SignIn(c context.Context, user *model.User) (string, string, error) {
+func (s *AuthenticationService) SignIn(c context.Context, user *model.User) (username, accessToken string, err error) {
 	user.Password = PasswordGenerator(user.Password, s.HashSalt)
 
 	user1, err := s.Rep.SelectUser(c, user.Username)

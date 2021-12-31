@@ -75,24 +75,6 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	/*	_, err = pool.RunWithOptions(&dockertest.RunOptions{
-			Repository: "flyway/flyway",
-			Tag:        "6.3.1",
-			Cmd: []string{
-				"-url=jdbc:postgresql://" + hostAndPort + "/dbname",
-				"-user=user",
-				"-password=e3cr3t",
-				"migrate",
-			},
-		}, func(config *docker.HostConfig) {
-			// set AutoRemove to true so that stopped container goes away by itself
-			config.AutoRemove = true
-			config.RestartPolicy = docker.RestartPolicy{Name: "no"}
-		})
-		if err != nil {
-			log.Fatalf("Could not start resource: %s", err)
-		}*/
-
 	cmd := exec.Command("./flyway", "-url=jdbc:postgresql://"+hostAndPort+"/dbname", "-user=user", "-password=e3cr3t", "migrate")
 
 	cmd.Dir = "/home/andeisaldyun/flyway-8.0.2"
@@ -124,22 +106,10 @@ var (
 		Type: "secondType",
 	}
 	cats = []*model.Cat{&firstC, &secondC}
-
-	firstU = model.User{
-		Username: "firstUser",
-		Password: "firstUser",
-		IsAdmin:  false,
-	}
-	secondU = model.User{
-		Username: "secondUser",
-		Password: "secondUser",
-		IsAdmin:  false,
-	}
-	users = []*model.User{&firstU, &secondU}
 )
 
 func TestPostgresRepository(t *testing.T) {
-	rep := repository.NewRepository(poll)
+	rep := repository.NewRepository(poll, "postgres")
 
 	// InsertC
 	ctx := setup(http.MethodPost, &firstC)

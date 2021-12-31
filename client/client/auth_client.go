@@ -23,8 +23,7 @@ func NewAuthClient(cc *grpc.ClientConn, username, password string) *AuthClient {
 }
 
 // SignIn login user and returns the access token
-func (client *AuthClient) SignIn() (string, string, error) {
-
+func (client *AuthClient) SignIn() (acToken, refToken string, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 	defer cancel()
 

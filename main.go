@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+
 	"github.com/AndiVS/myapp3.0/internal/broker"
 	"github.com/AndiVS/myapp3.0/internal/config"
 	"github.com/AndiVS/myapp3.0/internal/handler"
@@ -56,15 +57,15 @@ func main() {
 	switch cfg.System {
 	case mongodatabase:
 		mongoClient, mongoDatabase := getMongo(cfg.DBURL, cfg.DBName)
-		defer mongoClient.Disconnect(context.Background()) //nolint:errorcheck,critic
-		recordRepository = repository.NewRepository(mongoDatabase)
+		defer discMongo(mongoClient)
+		recordRepository = repository.NewRepository(mongoDatabase, cfg.System)
 	case postgresdatabase:
 		pool := getPostgres(cfg.DBURL)
 		if err != nil {
 			log.Errorf("Unable to connection to database: %v", err)
 		}
 		defer pool.Close()
-		recordRepository = repository.NewRepository(pool)
+		recordRepository = repository.NewRepository(pool, cfg.System)
 	}
 
 	log.Infof("Connected!")
@@ -75,16 +76,16 @@ func main() {
 	switch cfg.Broker {
 	case rediska:
 		cons := runRedis()
-		recordService = service.NewServiceCat(recordRepository, cons)
+		recordService = service.NewServiceCat(recordRepository, cons, cfg.System, cfg.Broker)
 	case kafka:
 		cons := runKafka()
-		recordService = service.NewServiceCat(recordRepository, cons)
+		recordService = service.NewServiceCat(recordRepository, cons, cfg.System, cfg.Broker)
 	case rabbit:
 		cons := runRabbitMQ()
-		recordService = service.NewServiceCat(recordRepository, cons)
+		recordService = service.NewServiceCat(recordRepository, cons, cfg.System, cfg.Broker)
 	}
 
-	//recordService := service.NewServiceCat(recordRepository, cons)
+	// recordService := service.NewServiceCat(recordRepository, cons)
 	userService := service.NewServiceUser(recordRepository)
 	authenticationService := service.NewServiceAuthentication(recordRepository, access, refresh, cfg.HashSalt)
 
@@ -200,6 +201,7 @@ func initHandlers(catHandler *handler.CatHandler, userHandler *handler.UserHandl
 	e.GET("/records", catHandler.GetAllCat)
 	e.PUT("/records/:_id", catHandler.UpdateCat)
 	e.DELETE("/records/:_id", catHandler.DeleteCat)*/
+
 	e.POST("/auth/sign-up", authenticationHandler.SignUp)
 	e.POST("/auth/sign-in", authenticationHandler.SignIn)
 	admin := e.Group("/admin")
@@ -254,9 +256,9 @@ func runRedis() broker.Broker {
 
 func runKafka() broker.Broker {
 	consumer := broker.StartKafkaConsumer()
-	//producer := broker.StartKafkaProducer()
+	// producer := broker.StartKafkaProducer()
 
-	//kafkaStruct := broker.NewKafka(consumer, producer, "Topic")
+	// kafkaStruct := broker.NewKafka(consumer, producer, "Topic")
 	kafkaStruct := broker.NewKafka(consumer, nil, "Topic")
 	return kafkaStruct
 }
@@ -265,4 +267,11 @@ func runRabbitMQ() broker.Broker {
 	rabbitStruct := broker.NewRabbitMQ("Que")
 
 	return rabbitStruct
+}
+
+func discMongo(mongoclient *mongo.Client) {
+	err := mongoclient.Disconnect(context.Background())
+	if err != nil {
+		log.Errorf("err in cisconnection in mongo %v", err)
+	}
 }

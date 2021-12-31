@@ -20,7 +20,7 @@ type Config struct {
 
 	System     string `env:"SYSTEM" envDefault:"postgres"`
 	DBUser     string `env:"DB_USER" envDefault:"andeisaldyun"`
-	DBPassword string `env:"DB_PASSWORD" envDefault:"e3cr3t"`
+	DBPassword string `env:"DB_PASSWORD" envDefault:""`
 	DBHost     string `env:"DB_HOST" envDefault:"localhost"`
 	DBPort     int    `env:"DB_PORT" envDefault:"5432"`
 	DBName     string `env:"DB_NAME" envDefault:"catsDB"`

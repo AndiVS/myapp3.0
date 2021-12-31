@@ -18,8 +18,8 @@ type Users interface {
 	DeleteUser(c context.Context, username string) error
 }
 
-// ServiceUser for generating token
-type ServiceUser struct {
+// UserService for generating token
+type UserService struct {
 	Rep repository.Users
 }
 
@@ -30,30 +30,30 @@ func NewServiceUser(repositories interface{}) Users {
 
 	switch reflect.TypeOf(repositories) {
 	case reflect.TypeOf(mongo):
-		return &ServiceUser{Rep: repositories.(*repository.Mongo)}
+		return &UserService{Rep: repositories.(*repository.Mongo)}
 	case reflect.TypeOf(postgres):
-		return &ServiceUser{Rep: repositories.(*repository.Postgres)}
+		return &UserService{Rep: repositories.(*repository.Postgres)}
 	}
 
 	return nil
 }
 
 // GetUser provides user
-func (s *ServiceUser) GetUser(c context.Context, username string) (*model.User, error) {
+func (s *UserService) GetUser(c context.Context, username string) (*model.User, error) {
 	return s.Rep.SelectUser(c, username)
 }
 
 // GetAllUser provides all cats
-func (s *ServiceUser) GetAllUser(c context.Context) ([]*model.User, error) {
+func (s *UserService) GetAllUser(c context.Context) ([]*model.User, error) {
 	return s.Rep.SelectAllUser(c)
 }
 
 // UpdateUser updating record about cat
-func (s *ServiceUser) UpdateUser(c context.Context, username string, isAdmin bool) error {
+func (s *UserService) UpdateUser(c context.Context, username string, isAdmin bool) error {
 	return s.Rep.UpdateUser(c, username, isAdmin)
 }
 
 // DeleteUser record about cat
-func (s *ServiceUser) DeleteUser(c context.Context, username string) error {
+func (s *UserService) DeleteUser(c context.Context, username string) error {
 	return s.Rep.DeleteUser(c, username)
 }

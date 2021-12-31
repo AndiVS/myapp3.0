@@ -14,7 +14,7 @@ import (
 // AuthenticationHandler handler for aunt
 type AuthenticationHandler struct {
 	Service service.Authentication
-	protocol.UnimplementedUserServiceServer
+	*protocol.UnimplementedUserServiceServer
 }
 
 // NewHandlerAuthentication create AuthenticationHandler

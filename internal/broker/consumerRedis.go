@@ -26,7 +26,8 @@ func processStream(stream redis.XMessage, catsMap map[string]*model.Cat) {
 	command := stream.Values["command"].(string)
 
 	switch destination {
-	case "cat":
+	case userString:
+	case catString:
 		cat := new(model.Cat)
 
 		err := cat.UnmarshalBinary([]byte(stream.Values["data"].(string)))
@@ -35,13 +36,13 @@ func processStream(stream redis.XMessage, catsMap map[string]*model.Cat) {
 		}
 
 		switch command {
-		case "Insert":
+		case insertCommand:
 			catsMap[cat.ID.String()] = cat
 			log.Printf("cat with id %v successfully inserted ", cat.ID)
-		case "Delete":
+		case deleteCommand:
 			delete(catsMap, cat.ID.String())
 			log.Printf("cat with id %v deleted successfully ", cat.ID)
-		case "Update":
+		case updateCommand:
 			catsMap[cat.ID.String()] = cat
 			log.Printf("cat with id %v updated successfully ", cat.ID)
 		}

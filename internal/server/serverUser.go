@@ -12,7 +12,7 @@ import (
 // UserServer for grpc
 type UserServer struct {
 	Service service.Users
-	protocol.UnimplementedUserServiceServer
+	*protocol.UnimplementedUserServiceServer
 }
 
 // NewUserServer  cat server
