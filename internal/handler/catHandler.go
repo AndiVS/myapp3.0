@@ -15,13 +15,13 @@ type CatHandler struct {
 	Service *service.Service
 }
 
-// New function for customization handler
-func New(Service *service.Service) CatHandler {
-	return CatHandler{Service: Service}
+// NewC function for customization handler
+func NewC(Service *service.Service) *CatHandler {
+	return &CatHandler{Service: Service}
 }
 
-// Add record about cat
-func (h *CatHandler) Add(c echo.Context) error {
+// AddC record about cat
+func (h *CatHandler) AddC(c echo.Context) error {
 	rec := new(model.Record)
 
 	if err := c.Bind(rec); err != nil {
@@ -29,7 +29,7 @@ func (h *CatHandler) Add(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err := h.Service.Add(c.Request().Context(), rec)
+	err := h.Service.AddC(c.Request().Context(), rec)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError)
@@ -38,11 +38,11 @@ func (h *CatHandler) Add(c echo.Context) error {
 	return echo.NewHTTPError(http.StatusCreated, rec.ID)
 }
 
-// Get provides cat
-func (h *CatHandler) Get(c echo.Context) error {
+// GetC provides cat
+func (h *CatHandler) GetC(c echo.Context) error {
 	id := c.Param("id")
 
-	r, err := h.Service.Get(c.Request().Context(), id)
+	r, err := h.Service.GetC(c.Request().Context(), id)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError)
@@ -51,11 +51,11 @@ func (h *CatHandler) Get(c echo.Context) error {
 	return echo.NewHTTPError(http.StatusOK, r)
 }
 
-// GetAll provides all cats
-func (h *CatHandler) GetAll(c echo.Context) error {
+// GetAllC provides all cats
+func (h *CatHandler) GetAllC(c echo.Context) error {
 	var rec []*model.Record
 
-	rec, err := h.Service.GetAll(c.Request().Context())
+	rec, err := h.Service.GetAllC(c.Request().Context())
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError)
@@ -64,8 +64,8 @@ func (h *CatHandler) GetAll(c echo.Context) error {
 	return echo.NewHTTPError(http.StatusOK, rec)
 }
 
-// Update updating record about cat
-func (h *CatHandler) Update(c echo.Context) error {
+// UpdateC updating record about cat
+func (h *CatHandler) UpdateC(c echo.Context) error {
 	rec := new(model.Record)
 
 	if err := c.Bind(rec); err != nil {
@@ -73,7 +73,7 @@ func (h *CatHandler) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err := h.Service.Update(c.Request().Context(), rec)
+	err := h.Service.UpdateC(c.Request().Context(), rec)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError)
@@ -82,11 +82,11 @@ func (h *CatHandler) Update(c echo.Context) error {
 	return echo.NewHTTPError(http.StatusOK, "completed successfully")
 }
 
-// Delete record about cat
-func (h *CatHandler) Delete(c echo.Context) error {
+// DeleteC record about cat
+func (h *CatHandler) DeleteC(c echo.Context) error {
 	id := c.Param("id")
 
-	err := h.Service.Delete(c.Request().Context(), id)
+	err := h.Service.DeleteC(c.Request().Context(), id)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError)
